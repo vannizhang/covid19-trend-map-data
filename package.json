@@ -1,0 +1,25 @@
+{
+  "name": "covid19-trend-map-data",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vannizhang/covid19-trend-map-data.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vannizhang/covid19-trend-map-data/issues"
+  },
+  "homepage": "https://github.com/vannizhang/covid19-trend-map-data#readme",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "express": "^4.17.1",
+    "jsonfile": "^6.0.1"
+  }
+}
