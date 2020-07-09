@@ -1,0 +1,1 @@
+# covid19-trend-map-data
