@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "download-covid19-data": "tsc && node dist/download-covid19-data.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

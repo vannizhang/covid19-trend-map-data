@@ -1,11 +1,13 @@
 {
     "compilerOptions": {
+      "allowSyntheticDefaultImports": true,
       "module": "commonjs",
       "esModuleInterop": true,
       "target": "es6",
       "moduleResolution": "node",
       "removeComments": true,
       "sourceMap": false,
+      "resolveJsonModule": true,
       "outDir": "dist",
       "lib": ["es2015"],
     },
