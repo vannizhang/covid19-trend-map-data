@@ -90,9 +90,9 @@ const calcMovingAve = (features:Covid19CasesByTimeQueryResultFeature[], numOfDay
                     NewCases
                 } = f.attributes;
 
-                confirmedSum += Confirmed;
-                deathSum += Deaths;
-                newCasesSum += NewCases;
+                confirmedSum += Confirmed >= 0 ? Confirmed : 0;
+                deathSum += Deaths >= 0 ? Deaths : 0;
+                newCasesSum += NewCases >= 0 ? NewCases : 0;
             })
     
             confirmedMovingAve.unshift( Math.round(confirmedSum/numOfDays) );
