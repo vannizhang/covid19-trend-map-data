@@ -62,7 +62,6 @@ const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, functi
         const { STATE_NAME } = attributes;
         const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?where=ST_Name+%3D+%27${STATE_NAME}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=dt&groupByFieldsForStatistics=ST_Name%2C+dt&outStatistics=%5B%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Confirmed%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Confirmed%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Deaths%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Deaths%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22NewCases%22%2C%0D%0A++++%22outStatisticFieldName%22%3A+%22NewCases%22%0D%0A++%7D++%0D%0A%5D&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=pjson&token=`;
         const queryResCovid19Data = yield axios_1.default.get(requestUrl);
-        console.log(queryResCovid19Data.data);
         if (queryResCovid19Data.data && queryResCovid19Data.data.features) {
             const results = queryResCovid19Data.data.features;
             const { confirmed, deaths, newCases } = calcMovingAve(results);
@@ -80,7 +79,6 @@ const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, functi
 const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, function* () {
     const output = [];
     const { features } = US_Counties_json_1.default;
-    console.log(new Date(), `start fetching data`);
     for (let i = 0, len = features.length; i < len; i++) {
         const county = features[i];
         const { attributes, geometry } = county;
@@ -103,6 +101,8 @@ const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, func
 const startUp = () => __awaiter(void 0, void 0, void 0, function* () {
     makeFolder(PUBLIC_FOLDER_PATH);
     try {
+        const dataUSCounties = yield fetchCovid19Data4USCounties();
+        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
         const dataUSStates = yield fetchCovid19Data4USStates();
         writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
     }
