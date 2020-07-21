@@ -23,7 +23,10 @@ type Covid19CasesByTimeQueryResultFeature = {
 type Calc7DaysAveResponse = {
     confirmed: number[],
     deaths: number[],
-    newCases: number[]
+    newCases: number[],
+    confirmedPer100k?: number[],
+    deathsPer100k?: number[],
+    newCasesPer100k?: number[]
 }
 
 type USCountiesDataItem = {
@@ -31,6 +34,7 @@ type USCountiesDataItem = {
         NAME: string;
         STATE: string;
         FIPS: string;
+        POPULATION: number;
     }
     geometry: {
         x: number;
@@ -61,11 +65,25 @@ type Covid19Data4USCounty = USCountiesDataItem & AggregatedValues;
 
 type Covid19Data4USState = USStatesDataItem & AggregatedValues; 
 
-const calcMovingAve = (features:Covid19CasesByTimeQueryResultFeature[], numOfDays = 7):Calc7DaysAveResponse=>{
+type CalcMovingAveOptions = {
+    features:Covid19CasesByTimeQueryResultFeature[];
+    totalPopulation?: number;
+    numOfDays?: number;
+}
+
+const calcMovingAve = ({
+    features, 
+    totalPopulation,
+    numOfDays = 7
+}:CalcMovingAveOptions):Calc7DaysAveResponse=>{
 
     const confirmedMovingAve: number[] = [];
     const deathsMovingAve: number[] = [];
     const newCasesMovingAve: number[] = [];
+
+    let confirmedMovingAvePer100K: number[] = [];
+    let deathsMovingAvePer100K: number[] = [];
+    let newCasesMovingAvePer100K: number[] = [];
 
     let indexOfLastItemInGroup = features.length - 1;
 
@@ -104,10 +122,28 @@ const calcMovingAve = (features:Covid19CasesByTimeQueryResultFeature[], numOfDay
 
     }
 
+    if(totalPopulation > 0){
+
+        confirmedMovingAvePer100K = confirmedMovingAve.map(num=>{
+            return Math.round(num/totalPopulation * 100000)
+        });
+
+        deathsMovingAvePer100K = deathsMovingAve.map(num=>{
+            return Math.round(num/totalPopulation * 100000)
+        });
+
+        newCasesMovingAvePer100K = newCasesMovingAve.map(num=>{
+            return Math.round(num/totalPopulation * 100000)
+        });
+    }
+
     return {
         confirmed: confirmedMovingAve,
         deaths: deathsMovingAve,
-        newCases: newCasesMovingAve
+        newCases: newCasesMovingAve,
+        confirmedPer100k: confirmedMovingAvePer100K,
+        deathsPer100k: deathsMovingAvePer100K,
+        newCasesPer100k: newCasesMovingAvePer100K
     }
 }
 
@@ -123,7 +159,7 @@ const fetchCovid19Data4USStates = async():Promise<Covid19Data4USState[]>=>{
 
         const { attributes, geometry } = state;
 
-        const { STATE_NAME } = attributes;
+        const { STATE_NAME, POPULATION } = attributes;
 
         /*
             e.g. https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1/query?where=ST_Name+%3D+%27California%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=dt&groupByFieldsForStatistics=ST_Name%2C+dt&outStatistics=%5B%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Confirmed%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Confirmed%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Deaths%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Deaths%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22NewCases%22%2C%0D%0A++++%22outStatisticFieldName%22%3A+%22NewCases%22%0D%0A++%7D++%0D%0A%5D&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=html&token=
@@ -163,8 +199,14 @@ const fetchCovid19Data4USStates = async():Promise<Covid19Data4USState[]>=>{
             const {
                 confirmed,
                 deaths,
-                newCases
-            } = calcMovingAve(results);
+                newCases,
+                confirmedPer100k,
+                deathsPer100k,
+                newCasesPer100k
+            } = calcMovingAve({
+                features: results,
+                totalPopulation: POPULATION
+            });
             // console.log(confirmed, deaths, newCases)
 
             output.push({
@@ -172,6 +214,9 @@ const fetchCovid19Data4USStates = async():Promise<Covid19Data4USState[]>=>{
                 confirmed,
                 deaths,
                 newCases,
+                confirmedPer100k,
+                deathsPer100k,
+                newCasesPer100k,
                 geometry
             })
         }
@@ -196,6 +241,8 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19Data4USCounty[]>=>{
 
         const { attributes, geometry } = county;
 
+        const { POPULATION } = attributes;
+
         const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?f=json&where=FIPS=${attributes.FIPS}&outFields=dt,Confirmed,Deaths,NewCases`;
 
         const queryResCovid19Data = await axios.get(requestUrl);
@@ -207,8 +254,14 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19Data4USCounty[]>=>{
             const {
                 confirmed,
                 deaths,
-                newCases
-            } = calcMovingAve(results);
+                newCases,
+                confirmedPer100k,
+                deathsPer100k,
+                newCasesPer100k
+            } = calcMovingAve({
+                features: results,
+                totalPopulation: POPULATION
+            });
             // console.log(confirmed, deaths, newCases)
 
             output.push({
@@ -216,6 +269,9 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19Data4USCounty[]>=>{
                 confirmed,
                 deaths,
                 newCases,
+                confirmedPer100k,
+                deathsPer100k,
+                newCasesPer100k,
                 geometry
             })
         }
