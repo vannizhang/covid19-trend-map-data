@@ -131,6 +131,8 @@ const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, func
 const startUp = () => __awaiter(void 0, void 0, void 0, function* () {
     makeFolder(PUBLIC_FOLDER_PATH);
     try {
+        const dataUSCounties = yield fetchCovid19Data4USCounties();
+        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
         const dataUSStates = yield fetchCovid19Data4USStates();
         writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
     }
