@@ -19,15 +19,14 @@ const US_Counties_json_1 = __importDefault(require("./US-Counties.json"));
 const US_States_json_1 = __importDefault(require("./US-States.json"));
 const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
 const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
+const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
 const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
+const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 const calcMovingAve = ({ features, totalPopulation, numOfDays = 7 }) => {
-    const confirmedMovingAve = [];
-    const deathsMovingAve = [];
-    const newCasesMovingAve = [];
-    let confirmedMovingAvePer100K = [];
-    let deathsMovingAvePer100K = [];
-    let newCasesMovingAvePer100K = [];
+    let confirmedMovingAve = [];
+    let deathsMovingAve = [];
+    let newCasesMovingAve = [];
     let indexOfLastItemInGroup = features.length - 1;
     for (let i = indexOfLastItemInGroup; i >= 0; i--) {
         if (i === indexOfLastItemInGroup) {
@@ -51,13 +50,13 @@ const calcMovingAve = ({ features, totalPopulation, numOfDays = 7 }) => {
         }
     }
     if (totalPopulation > 0) {
-        confirmedMovingAvePer100K = confirmedMovingAve.map(num => {
+        confirmedMovingAve = confirmedMovingAve.map(num => {
             return Math.round(num / totalPopulation * 100000);
         });
-        deathsMovingAvePer100K = deathsMovingAve.map(num => {
+        deathsMovingAve = deathsMovingAve.map(num => {
             return Math.round(num / totalPopulation * 100000);
         });
-        newCasesMovingAvePer100K = newCasesMovingAve.map(num => {
+        newCasesMovingAve = newCasesMovingAve.map(num => {
             return Math.round(num / totalPopulation * 100000);
         });
     }
@@ -65,23 +64,20 @@ const calcMovingAve = ({ features, totalPopulation, numOfDays = 7 }) => {
         confirmed: confirmedMovingAve,
         deaths: deathsMovingAve,
         newCases: newCasesMovingAve,
-        confirmedPer100k: confirmedMovingAvePer100K,
-        deathsPer100k: deathsMovingAvePer100K,
-        newCasesPer100k: newCasesMovingAvePer100K
     };
 };
 const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, function* () {
     const output = [];
     const { features } = US_States_json_1.default;
     for (let i = 0, len = features.length; i < len; i++) {
-        const state = features[i];
-        const { attributes, geometry } = state;
+        const feature = features[i];
+        const { attributes, geometry } = feature;
         const { STATE_NAME, POPULATION } = attributes;
         const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?where=ST_Name+%3D+%27${STATE_NAME}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=dt&groupByFieldsForStatistics=ST_Name%2C+dt&outStatistics=%5B%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Confirmed%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Confirmed%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Deaths%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Deaths%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22NewCases%22%2C%0D%0A++++%22outStatisticFieldName%22%3A+%22NewCases%22%0D%0A++%7D++%0D%0A%5D&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=pjson&token=`;
         const queryResCovid19Data = yield axios_1.default.get(requestUrl);
         if (queryResCovid19Data.data && queryResCovid19Data.data.features) {
             const results = queryResCovid19Data.data.features;
-            const { confirmed, deaths, newCases, confirmedPer100k, deathsPer100k, newCasesPer100k } = calcMovingAve({
+            const { confirmed, deaths, newCases, } = calcMovingAve({
                 features: results,
                 totalPopulation: POPULATION
             });
@@ -90,9 +86,6 @@ const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, functi
                 confirmed,
                 deaths,
                 newCases,
-                confirmedPer100k,
-                deathsPer100k,
-                newCasesPer100k,
                 geometry
             });
         }
@@ -110,7 +103,7 @@ const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, func
         const queryResCovid19Data = yield axios_1.default.get(requestUrl);
         if (queryResCovid19Data.data && queryResCovid19Data.data.features) {
             const results = queryResCovid19Data.data.features;
-            const { confirmed, deaths, newCases, confirmedPer100k, deathsPer100k, newCasesPer100k } = calcMovingAve({
+            const { confirmed, deaths, newCases, } = calcMovingAve({
                 features: results,
                 totalPopulation: POPULATION
             });
@@ -119,22 +112,76 @@ const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, func
                 confirmed,
                 deaths,
                 newCases,
-                confirmedPer100k,
-                deathsPer100k,
-                newCasesPer100k,
                 geometry
             });
         }
     }
     return output;
 });
+const calculatePath = (values, ymax) => {
+    const path = values.map((val, idx) => [idx, val]);
+    const xmin = 0;
+    const ymin = 0;
+    const xmax = values.length;
+    const AspectRatio = .75;
+    const ratio = Math.floor((xmax / ymax) * 100000) / 100000;
+    path.forEach((p) => {
+        p[1] = Math.round(p[1] * ratio * AspectRatio);
+    });
+    ymax = xmax;
+    return {
+        path,
+        frame: {
+            xmin,
+            ymin,
+            xmax,
+            ymax
+        }
+    };
+};
+const convertCovid19TrendDataToPath = (data) => {
+    const maxValues = {
+        confirmed: [],
+        deaths: [],
+        newCases: []
+    };
+    data.forEach(d => {
+        const confirmed = d.confirmed.reduce((prev, curr) => Math.max(prev, curr));
+        maxValues.confirmed.push(confirmed);
+        const deaths = d.deaths.reduce((prev, curr) => Math.max(prev, curr));
+        maxValues.deaths.push(deaths);
+        const newCases = d.newCases.reduce((prev, curr) => Math.max(prev, curr));
+        maxValues.newCases.push(newCases);
+    });
+    const maxConfirmed = maxValues.confirmed.reduce((prev, curr) => Math.max(prev, curr));
+    const maxDeaths = maxValues.deaths.reduce((prev, curr) => Math.max(prev, curr));
+    const maxNewCases = maxValues.newCases.reduce((prev, curr) => Math.max(prev, curr));
+    const covid19TrendDataAsPaths = data.map(d => {
+        const { attributes, geometry, confirmed, deaths, newCases } = d;
+        const pathConfirmed = calculatePath(confirmed, maxConfirmed);
+        const pathDeaths = calculatePath(deaths, maxDeaths);
+        const pathNewCases = calculatePath(newCases, maxNewCases);
+        return {
+            attributes,
+            geometry,
+            pathConfirmed,
+            pathDeaths,
+            pathNewCases
+        };
+    });
+    return covid19TrendDataAsPaths;
+};
 const startUp = () => __awaiter(void 0, void 0, void 0, function* () {
     makeFolder(PUBLIC_FOLDER_PATH);
     try {
         const dataUSCounties = yield fetchCovid19Data4USCounties();
         writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
+        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
+        writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
         const dataUSStates = yield fetchCovid19Data4USStates();
         writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
+        const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
+        writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
     }
     catch (err) {
         console.log(JSON.stringify(err));
