@@ -123,12 +123,21 @@ const calculatePath = (values, ymax) => {
     const xmin = 0;
     const ymin = 0;
     const xmax = values.length;
+    ymax = ymax || values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY);
     const AspectRatio = .75;
-    const ratio = Math.floor((xmax / ymax) * 100000) / 100000;
-    path.forEach((p) => {
-        p[1] = Math.round(p[1] * ratio * AspectRatio);
-    });
-    ymax = xmax;
+    if (ymax < xmax) {
+        ymax = xmax;
+        path.forEach((p) => {
+            p[1] = Math.round(p[1] * AspectRatio);
+        });
+    }
+    else {
+        const ratio = Math.floor((xmax / ymax) * 100000) / 100000;
+        path.forEach((p) => {
+            p[1] = Math.round(p[1] * ratio * AspectRatio);
+        });
+        ymax = xmax;
+    }
     return {
         path,
         frame: {
@@ -140,27 +149,11 @@ const calculatePath = (values, ymax) => {
     };
 };
 const convertCovid19TrendDataToPath = (data) => {
-    const maxValues = {
-        confirmed: [],
-        deaths: [],
-        newCases: []
-    };
-    data.forEach(d => {
-        const confirmed = d.confirmed.reduce((prev, curr) => Math.max(prev, curr));
-        maxValues.confirmed.push(confirmed);
-        const deaths = d.deaths.reduce((prev, curr) => Math.max(prev, curr));
-        maxValues.deaths.push(deaths);
-        const newCases = d.newCases.reduce((prev, curr) => Math.max(prev, curr));
-        maxValues.newCases.push(newCases);
-    });
-    const maxConfirmed = maxValues.confirmed.reduce((prev, curr) => Math.max(prev, curr));
-    const maxDeaths = maxValues.deaths.reduce((prev, curr) => Math.max(prev, curr));
-    const maxNewCases = maxValues.newCases.reduce((prev, curr) => Math.max(prev, curr));
     const covid19TrendDataAsPaths = data.map(d => {
         const { attributes, geometry, confirmed, deaths, newCases } = d;
-        const pathConfirmed = calculatePath(confirmed, maxConfirmed);
-        const pathDeaths = calculatePath(deaths, maxDeaths);
-        const pathNewCases = calculatePath(newCases, maxNewCases);
+        const pathConfirmed = calculatePath(confirmed);
+        const pathDeaths = calculatePath(deaths);
+        const pathNewCases = calculatePath(newCases);
         return {
             attributes,
             geometry,

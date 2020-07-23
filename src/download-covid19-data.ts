@@ -280,24 +280,36 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
 
 };
 
-const calculatePath = (values: number[], ymax:number): PathData=>{
+const calculatePath = (values: number[], ymax?:number): PathData=>{
 
     const path = values.map((val, idx)=>[ idx, val ]);
 
     const xmin = 0;
     const ymin = 0;
     const xmax = values.length;
+    ymax = ymax || values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY);
 
     const AspectRatio = .75;
 
-    const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
-    // console.log('ratio', ratio)
+    if ( ymax < xmax ){
+        // console.log('use xmax as ymax', ymax, xmax);	
+        ymax = xmax;
 
-    path.forEach((p) => {
-        p[1] = Math.round(p[1] * ratio * AspectRatio);
-    });
+        path.forEach((p) => {
+            p[1] = Math.round(p[1] * AspectRatio);
+        });
+
+    } else {	            
+
+        const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
+        // console.log('ratio', ratio)
     
-    ymax = xmax //Math.ceil(ymax * ratio);
+        path.forEach((p) => {
+            p[1] = Math.round(p[1] * ratio * AspectRatio);
+        });
+        
+        ymax = xmax //Math.ceil(ymax * ratio);
+    } 
 
     return {
         path,
@@ -313,32 +325,32 @@ const calculatePath = (values: number[], ymax:number): PathData=>{
 
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
 const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendDataAsPaths[]=>{
-    // max values from each state/county
-    const maxValues: {
-        confirmed: number[],
-        deaths: number[],
-        newCases: number[],
-    } = {
-        confirmed: [],
-        deaths: [],
-        newCases: []
-    };
+    // // max values from each state/county
+    // const maxValues: {
+    //     confirmed: number[],
+    //     deaths: number[],
+    //     newCases: number[],
+    // } = {
+    //     confirmed: [],
+    //     deaths: [],
+    //     newCases: []
+    // };
 
-    data.forEach(d=>{
-        const confirmed = d.confirmed.reduce((prev, curr) => Math.max(prev, curr));
-        maxValues.confirmed.push(confirmed);
+    // data.forEach(d=>{
+    //     const confirmed = d.confirmed.reduce((prev, curr) => Math.max(prev, curr));
+    //     maxValues.confirmed.push(confirmed);
 
-        const deaths = d.deaths.reduce((prev, curr) => Math.max(prev, curr));
-        maxValues.deaths.push(deaths);
+    //     const deaths = d.deaths.reduce((prev, curr) => Math.max(prev, curr));
+    //     maxValues.deaths.push(deaths);
 
-        const newCases = d.newCases.reduce((prev, curr) => Math.max(prev, curr));
-        maxValues.newCases.push(newCases);
-    });
+    //     const newCases = d.newCases.reduce((prev, curr) => Math.max(prev, curr));
+    //     maxValues.newCases.push(newCases);
+    // });
 
-    // final max values for the entire US, will be used as max y scale 
-    const maxConfirmed = maxValues.confirmed.reduce((prev, curr) => Math.max(prev, curr));
-    const maxDeaths = maxValues.deaths.reduce((prev, curr) => Math.max(prev, curr));
-    const maxNewCases = maxValues.newCases.reduce((prev, curr) => Math.max(prev, curr));
+    // // final max values for the entire US, will be used as max y scale 
+    // const maxConfirmed = maxValues.confirmed.reduce((prev, curr) => Math.max(prev, curr));
+    // const maxDeaths = maxValues.deaths.reduce((prev, curr) => Math.max(prev, curr));
+    // const maxNewCases = maxValues.newCases.reduce((prev, curr) => Math.max(prev, curr));
 
     const covid19TrendDataAsPaths = data.map(d=>{
         const {
@@ -349,9 +361,9 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
             newCases
         } = d;
 
-        const pathConfirmed = calculatePath(confirmed, maxConfirmed);
-        const pathDeaths = calculatePath(deaths, maxDeaths);
-        const pathNewCases = calculatePath(newCases, maxNewCases);
+        const pathConfirmed = calculatePath(confirmed);
+        const pathDeaths = calculatePath(deaths);
+        const pathNewCases = calculatePath(newCases);
 
         return {
             attributes,
