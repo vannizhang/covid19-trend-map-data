@@ -16,7 +16,7 @@ const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-pat
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 
 type FeatureFromJSON = {
-    attributes: any;
+    attributes?: any;
     geometry: {
         x: number;
         y: number;
@@ -49,9 +49,9 @@ type Covid19TrendData = FeatureFromJSON & {
 } 
 
 type Covid19TrendDataAsPaths = FeatureFromJSON & {
-    pathConfirmed: PathData;
-    pathDeaths: PathData;
-    pathNewCases: PathData;
+    confirmed: PathData;
+    deaths: PathData;
+    newCases: PathData;
 } 
 
 type CalcMovingAveOptions = {
@@ -78,10 +78,6 @@ const calcMovingAve = ({
     let confirmedMovingAve: number[] = [];
     let deathsMovingAve: number[] = [];
     let newCasesMovingAve: number[] = [];
-
-    // let confirmedMovingAvePer100K: number[] = [];
-    // let deathsMovingAvePer100K: number[] = [];
-    // let newCasesMovingAvePer100K: number[] = [];
 
     let indexOfLastItemInGroup = features.length - 1;
 
@@ -366,11 +362,11 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
         const pathNewCases = calculatePath(newCases);
 
         return {
-            attributes,
+            // attributes,
             geometry,
-            pathConfirmed,
-            pathDeaths,
-            pathNewCases
+            confirmed: pathConfirmed,
+            deaths: pathDeaths,
+            newCases: pathNewCases
         }
     });
 
@@ -383,12 +379,12 @@ const startUp = async()=>{
     makeFolder(PUBLIC_FOLDER_PATH);
     
     try {
-        const dataUSCounties = await fetchCovid19Data4USCounties();
-        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
-        // console.log(JSON.stringify(data));
+        // const dataUSCounties = await fetchCovid19Data4USCounties();
+        // writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
+        // // console.log(JSON.stringify(data));
         
-        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
-        writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
+        // const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
+        // writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
 
 
         const dataUSStates = await fetchCovid19Data4USStates();
