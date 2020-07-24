@@ -75,70 +75,85 @@ const calcMovingAve = ({
     numOfDays = 7
 }:CalcMovingAveOptions):Calc7DaysAveResponse=>{
 
-    let confirmedMovingAve: number[] = [];
-    let deathsMovingAve: number[] = [];
-    let newCasesMovingAve: number[] = [];
+    const movingAveValues: number[][] = [];
 
-    let indexOfLastItemInGroup = features.length - 1;
+    // calculate the 7 day moving ave (confirmed, death and new cases per 100k) for each feature,
+    // and save the values into movingAveValues
+    for(let i = features.length - 1; i > 0; i--){
+
+        let sumConfirmed = 0;
+        let sumDeaths = 0;
+        let sumNewCases = 0;
+
+        const startIndex = i - 6 >= 0 ? i - 6 : 0;
+        const endIndex = i + 1;
+
+        const featuresInPastWeek = features
+            .slice(startIndex, endIndex);
+
+        featuresInPastWeek.forEach(d=>{
+
+            const { Confirmed, Deaths, NewCases } = d.attributes
+
+            sumConfirmed += Confirmed;
+            sumDeaths += Deaths;
+            sumNewCases += NewCases;
+        });
+
+        const movingAvgConfirmedPer100k = Math.round(( (sumConfirmed / numOfDays ) / totalPopulation ) * 100000 );
+        const movingAvgDeathsPer100k = Math.round((sumDeaths / numOfDays/ totalPopulation ) * 100000);
+        const movingAvgNewCasesPer100k = Math.round((sumNewCases / numOfDays/ totalPopulation ) * 100000);
+
+        movingAveValues.unshift([
+            movingAvgConfirmedPer100k,
+            movingAvgDeathsPer100k,
+            movingAvgNewCasesPer100k
+        ])
+    }
+
+    let weeklyAveConfirmed: number[] = [];
+    let weeklyAveDeaths: number[] = [];
+    let weeklyAveNewCases: number[] = [];
+
+    let indexOfLastItemInGroup = movingAveValues.length - 1;
 
     for(let i = indexOfLastItemInGroup; i >= 0; i --){
 
-        if(i === indexOfLastItemInGroup){
+        const startIndex = indexOfLastItemInGroup - (numOfDays - 1);
 
-            const startIndex = indexOfLastItemInGroup - (numOfDays - 1) >= 0 
-                ? indexOfLastItemInGroup - (numOfDays - 1) 
-                : 0;
+        if(i === indexOfLastItemInGroup && startIndex >= 0 ){
 
-            const featuresInGroup = features.slice(startIndex, indexOfLastItemInGroup);
+            const movingAveValuesForSelectedGroup = movingAveValues.slice(startIndex, indexOfLastItemInGroup);
 
             let confirmedSum = 0;
             let deathSum = 0;
             let newCasesSum = 0;
 
-            featuresInGroup.forEach(f=>{
-                const {
+            movingAveValuesForSelectedGroup.forEach(item=>{
+                const [
                     Confirmed,
                     Deaths,
                     NewCases
-                } = f.attributes;
+                ] = item;
 
                 confirmedSum += Confirmed >= 0 ? Confirmed : 0;
                 deathSum += Deaths >= 0 ? Deaths : 0;
                 newCasesSum += NewCases >= 0 ? NewCases : 0;
             })
     
-            confirmedMovingAve.unshift( Math.round(confirmedSum/numOfDays) );
-            deathsMovingAve.unshift( Math.round(deathSum/numOfDays) );
-            newCasesMovingAve.unshift( Math.round(newCasesSum/numOfDays) );
+            weeklyAveConfirmed.unshift( Math.round(confirmedSum/numOfDays) );
+            weeklyAveDeaths.unshift( Math.round(deathSum/numOfDays) );
+            weeklyAveNewCases.unshift( Math.round(newCasesSum/numOfDays) );
 
             indexOfLastItemInGroup = startIndex - 1;
         }
 
     }
 
-    // normalize the values to 100k per cases
-    if(totalPopulation > 0){
-
-        confirmedMovingAve = confirmedMovingAve.map(num=>{
-            return Math.round(num/totalPopulation * 100000)
-        });
-
-        deathsMovingAve = deathsMovingAve.map(num=>{
-            return Math.round(num/totalPopulation * 100000)
-        });
-
-        newCasesMovingAve = newCasesMovingAve.map(num=>{
-            return Math.round(num/totalPopulation * 100000)
-        });
-    }
-
     return {
-        confirmed: confirmedMovingAve,
-        deaths: deathsMovingAve,
-        newCases: newCasesMovingAve,
-        // confirmedPer100k: confirmedMovingAvePer100K,
-        // deathsPer100k: deathsMovingAvePer100K,
-        // newCasesPer100k: newCasesMovingAvePer100K
+        confirmed: weeklyAveConfirmed,
+        deaths: weeklyAveDeaths,
+        newCases: weeklyAveNewCases
     }
 }
 

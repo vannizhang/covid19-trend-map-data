@@ -24,46 +24,57 @@ const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
 const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 const calcMovingAve = ({ features, totalPopulation, numOfDays = 7 }) => {
-    let confirmedMovingAve = [];
-    let deathsMovingAve = [];
-    let newCasesMovingAve = [];
-    let indexOfLastItemInGroup = features.length - 1;
+    const movingAveValues = [];
+    for (let i = features.length - 1; i > 0; i--) {
+        let sumConfirmed = 0;
+        let sumDeaths = 0;
+        let sumNewCases = 0;
+        const startIndex = i - 6 >= 0 ? i - 6 : 0;
+        const endIndex = i + 1;
+        const featuresInPastWeek = features
+            .slice(startIndex, endIndex);
+        featuresInPastWeek.forEach(d => {
+            const { Confirmed, Deaths, NewCases } = d.attributes;
+            sumConfirmed += Confirmed;
+            sumDeaths += Deaths;
+            sumNewCases += NewCases;
+        });
+        const movingAvgConfirmedPer100k = Math.round(((sumConfirmed / numOfDays) / totalPopulation) * 100000);
+        const movingAvgDeathsPer100k = Math.round((sumDeaths / numOfDays / totalPopulation) * 100000);
+        const movingAvgNewCasesPer100k = Math.round((sumNewCases / numOfDays / totalPopulation) * 100000);
+        movingAveValues.unshift([
+            movingAvgConfirmedPer100k,
+            movingAvgDeathsPer100k,
+            movingAvgNewCasesPer100k
+        ]);
+    }
+    let weeklyAveConfirmed = [];
+    let weeklyAveDeaths = [];
+    let weeklyAveNewCases = [];
+    let indexOfLastItemInGroup = movingAveValues.length - 1;
     for (let i = indexOfLastItemInGroup; i >= 0; i--) {
-        if (i === indexOfLastItemInGroup) {
-            const startIndex = indexOfLastItemInGroup - (numOfDays - 1) >= 0
-                ? indexOfLastItemInGroup - (numOfDays - 1)
-                : 0;
-            const featuresInGroup = features.slice(startIndex, indexOfLastItemInGroup);
+        const startIndex = indexOfLastItemInGroup - (numOfDays - 1);
+        if (i === indexOfLastItemInGroup && startIndex >= 0) {
+            const movingAveValuesForSelectedGroup = movingAveValues.slice(startIndex, indexOfLastItemInGroup);
             let confirmedSum = 0;
             let deathSum = 0;
             let newCasesSum = 0;
-            featuresInGroup.forEach(f => {
-                const { Confirmed, Deaths, NewCases } = f.attributes;
+            movingAveValuesForSelectedGroup.forEach(item => {
+                const [Confirmed, Deaths, NewCases] = item;
                 confirmedSum += Confirmed >= 0 ? Confirmed : 0;
                 deathSum += Deaths >= 0 ? Deaths : 0;
                 newCasesSum += NewCases >= 0 ? NewCases : 0;
             });
-            confirmedMovingAve.unshift(Math.round(confirmedSum / numOfDays));
-            deathsMovingAve.unshift(Math.round(deathSum / numOfDays));
-            newCasesMovingAve.unshift(Math.round(newCasesSum / numOfDays));
+            weeklyAveConfirmed.unshift(Math.round(confirmedSum / numOfDays));
+            weeklyAveDeaths.unshift(Math.round(deathSum / numOfDays));
+            weeklyAveNewCases.unshift(Math.round(newCasesSum / numOfDays));
             indexOfLastItemInGroup = startIndex - 1;
         }
     }
-    if (totalPopulation > 0) {
-        confirmedMovingAve = confirmedMovingAve.map(num => {
-            return Math.round(num / totalPopulation * 100000);
-        });
-        deathsMovingAve = deathsMovingAve.map(num => {
-            return Math.round(num / totalPopulation * 100000);
-        });
-        newCasesMovingAve = newCasesMovingAve.map(num => {
-            return Math.round(num / totalPopulation * 100000);
-        });
-    }
     return {
-        confirmed: confirmedMovingAve,
-        deaths: deathsMovingAve,
-        newCases: newCasesMovingAve,
+        confirmed: weeklyAveConfirmed,
+        deaths: weeklyAveDeaths,
+        newCases: weeklyAveNewCases
     };
 };
 const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, function* () {
