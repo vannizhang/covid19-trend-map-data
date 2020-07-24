@@ -210,9 +210,6 @@ const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
                 confirmed,
                 deaths,
                 newCases,
-                // confirmedPer100k,
-                // deathsPer100k,
-                // newCasesPer100k
             } = calcMovingAve({
                 features: results,
                 totalPopulation: POPULATION
@@ -224,9 +221,6 @@ const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
                 confirmed,
                 deaths,
                 newCases,
-                // confirmedPer100k,
-                // deathsPer100k,
-                // newCasesPer100k,
                 geometry
             })
         }
@@ -252,8 +246,8 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
         const { attributes, geometry } = county;
 
         const { POPULATION } = attributes;
-
-        const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?f=json&where=FIPS=${attributes.FIPS}&outFields=dt,Confirmed,Deaths,NewCases`;
+    
+        const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?f=json&where=FIPS=${attributes.FIPS}&outFields=dt,Confirmed,Deaths,NewCases&orderByFields=dt`;
 
         const queryResCovid19Data = await axios.get(requestUrl);
 
@@ -264,10 +258,7 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
             const {
                 confirmed,
                 deaths,
-                newCases,
-                // confirmedPer100k,
-                // deathsPer100k,
-                // newCasesPer100k
+                newCases
             } = calcMovingAve({
                 features: results,
                 totalPopulation: POPULATION
@@ -279,9 +270,6 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
                 confirmed,
                 deaths,
                 newCases,
-                // confirmedPer100k,
-                // deathsPer100k,
-                // newCasesPer100k,
                 geometry
             })
         }
@@ -336,32 +324,6 @@ const calculatePath = (values: number[], ymax?:number): PathData=>{
 
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
 const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendDataAsPaths[]=>{
-    // // max values from each state/county
-    // const maxValues: {
-    //     confirmed: number[],
-    //     deaths: number[],
-    //     newCases: number[],
-    // } = {
-    //     confirmed: [],
-    //     deaths: [],
-    //     newCases: []
-    // };
-
-    // data.forEach(d=>{
-    //     const confirmed = d.confirmed.reduce((prev, curr) => Math.max(prev, curr));
-    //     maxValues.confirmed.push(confirmed);
-
-    //     const deaths = d.deaths.reduce((prev, curr) => Math.max(prev, curr));
-    //     maxValues.deaths.push(deaths);
-
-    //     const newCases = d.newCases.reduce((prev, curr) => Math.max(prev, curr));
-    //     maxValues.newCases.push(newCases);
-    // });
-
-    // // final max values for the entire US, will be used as max y scale 
-    // const maxConfirmed = maxValues.confirmed.reduce((prev, curr) => Math.max(prev, curr));
-    // const maxDeaths = maxValues.deaths.reduce((prev, curr) => Math.max(prev, curr));
-    // const maxNewCases = maxValues.newCases.reduce((prev, curr) => Math.max(prev, curr));
 
     const covid19TrendDataAsPaths = data.map(d=>{
         const {

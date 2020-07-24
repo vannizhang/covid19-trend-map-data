@@ -110,11 +110,11 @@ const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, func
         const county = features[i];
         const { attributes, geometry } = county;
         const { POPULATION } = attributes;
-        const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?f=json&where=FIPS=${attributes.FIPS}&outFields=dt,Confirmed,Deaths,NewCases`;
+        const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?f=json&where=FIPS=${attributes.FIPS}&outFields=dt,Confirmed,Deaths,NewCases&orderByFields=dt`;
         const queryResCovid19Data = yield axios_1.default.get(requestUrl);
         if (queryResCovid19Data.data && queryResCovid19Data.data.features) {
             const results = queryResCovid19Data.data.features;
-            const { confirmed, deaths, newCases, } = calcMovingAve({
+            const { confirmed, deaths, newCases } = calcMovingAve({
                 features: results,
                 totalPopulation: POPULATION
             });
