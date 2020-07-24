@@ -379,12 +379,12 @@ const startUp = async()=>{
     makeFolder(PUBLIC_FOLDER_PATH);
     
     try {
-        // const dataUSCounties = await fetchCovid19Data4USCounties();
-        // writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
-        // // console.log(JSON.stringify(data));
+        const dataUSCounties = await fetchCovid19Data4USCounties();
+        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
+        // console.log(JSON.stringify(data));
         
-        // const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
-        // writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
+        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
+        writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
 
 
         const dataUSStates = await fetchCovid19Data4USStates();
