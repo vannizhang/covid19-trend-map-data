@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 import axios from 'axios';
+import { URLSearchParams } from 'url';
+
 import USCounties from './US-Counties.json';
 import USStates from './US-States.json';
 
@@ -157,29 +159,22 @@ const calcMovingAve = ({
     }
 }
 
-const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
+const fetchCovid19CasesByTimeData = async({
+    where,
+    returnStateLevelData = false
+}:{
+    where: string;
+    returnStateLevelData?: boolean
+}):Promise<Covid19CasesByTimeQueryResultFeature[]>=>{
 
-    const output = [];
-
-    const { features } = USStates;
-
-    for(let i = 0, len = features.length; i < len; i++){
-
-        const feature = features[i];
-
-        const { attributes, geometry } = feature;
-
-        const { STATE_NAME, POPULATION } = attributes;
-
-        /*
-            e.g. https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1/query?where=ST_Name+%3D+%27California%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=dt&groupByFieldsForStatistics=ST_Name%2C+dt&outStatistics=%5B%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Confirmed%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Confirmed%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Deaths%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Deaths%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22NewCases%22%2C%0D%0A++++%22outStatisticFieldName%22%3A+%22NewCases%22%0D%0A++%7D++%0D%0A%5D&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=html&token=
-
-            Order By Fields: dt
-
-            Group By Fields (For Statistics): ST_Name, dt
-
-            Output Statistics:
-            [
+    const params = returnStateLevelData
+        ? {
+            f: 'json',
+            where,
+            outFields: '*',
+            orderByFields: 'dt',
+            groupByFieldsForStatistics: 'ST_Name,dt',
+            outStatistics: JSON.stringify([
                 {
                     "statisticType": "sum",
                     "onStatisticField": "Confirmed", 
@@ -194,36 +189,66 @@ const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
                     "statisticType": "sum",
                     "onStatisticField": "NewCases",
                     "outStatisticFieldName": "NewCases"
-                }  
-            ]
-        */
-
-        const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?where=ST_Name+%3D+%27${STATE_NAME}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=dt&groupByFieldsForStatistics=ST_Name%2C+dt&outStatistics=%5B%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Confirmed%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Confirmed%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22Deaths%22%2C+%0D%0A++++%22outStatisticFieldName%22%3A+%22Deaths%22%0D%0A++%7D%2C%0D%0A++%7B%0D%0A++++%22statisticType%22%3A+%22sum%22%2C%0D%0A++++%22onStatisticField%22%3A+%22NewCases%22%2C%0D%0A++++%22outStatisticFieldName%22%3A+%22NewCases%22%0D%0A++%7D++%0D%0A%5D&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=pjson&token=`;
-
-        const queryResCovid19Data = await axios.get(requestUrl);
-
-        if(queryResCovid19Data.data && queryResCovid19Data.data.features){
-
-            const results: Covid19CasesByTimeQueryResultFeature[] = queryResCovid19Data.data.features;
-
-            const {
-                confirmed,
-                deaths,
-                newCases,
-            } = calcMovingAve({
-                features: results,
-                totalPopulation: POPULATION
-            });
-            // console.log(confirmed, deaths, newCases)
-
-            output.push({
-                attributes,
-                confirmed,
-                deaths,
-                newCases,
-                geometry
-            })
+                },
+                {
+                    "statisticType": "sum",
+                    "onStatisticField": "Population",
+                    "outStatisticFieldName": "Population"
+                }
+            ])
         }
+        : {
+            f: 'json',
+            where,
+            outFields: ['dt','Confirmed','Deaths','NewCases','Population'],
+            orderByFields: 'dt'
+        }
+
+    const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/`;
+
+    const { data } = await axios.get(requestUrl, {
+        params: new URLSearchParams(params)
+    });
+
+    return data && data.features 
+        ? data.features 
+        : [];
+};
+
+const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
+
+    const output = [];
+
+    const { features } = USStates;
+
+    for(let i = 0, len = features.length; i < len; i++){
+
+        const feature = features[i];
+
+        const { attributes, geometry } = feature;
+
+        const results = await fetchCovid19CasesByTimeData({
+            where: `ST_Name = '${attributes.STATE_NAME}'`,
+            returnStateLevelData: true
+        });
+
+        const {
+            confirmed,
+            deaths,
+            newCases,
+        } = calcMovingAve({
+            features: results,
+            totalPopulation: attributes.POPULATION
+        });
+        // console.log(confirmed, deaths, newCases)
+
+        output.push({
+            attributes,
+            confirmed,
+            deaths,
+            newCases,
+            geometry
+        })
 
     }
 
@@ -237,42 +262,32 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
 
     const { features } = USCounties;
 
-    // console.log(new Date(), `start fetching data`);
-
     for(let i = 0, len = features.length; i < len; i++){
 
         const county = features[i];
 
         const { attributes, geometry } = county;
 
-        const { POPULATION } = attributes;
-    
-        const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?f=json&where=FIPS=${attributes.FIPS}&outFields=dt,Confirmed,Deaths,NewCases&orderByFields=dt`;
+        const results = await fetchCovid19CasesByTimeData({
+            where: `FIPS = '${attributes.FIPS}'`
+        });
 
-        const queryResCovid19Data = await axios.get(requestUrl);
+        const {
+            confirmed,
+            deaths,
+            newCases,
+        } = calcMovingAve({
+            features: results,
+            totalPopulation: attributes.POPULATION
+        });
 
-        if(queryResCovid19Data.data && queryResCovid19Data.data.features){
-
-            const results: Covid19CasesByTimeQueryResultFeature[] = queryResCovid19Data.data.features;
-
-            const {
-                confirmed,
-                deaths,
-                newCases
-            } = calcMovingAve({
-                features: results,
-                totalPopulation: POPULATION
-            });
-            // console.log(confirmed, deaths, newCases)
-
-            output.push({
-                attributes,
-                confirmed,
-                deaths,
-                newCases,
-                geometry
-            })
-        }
+        output.push({
+            attributes,
+            geometry,
+            confirmed,
+            deaths,
+            newCases
+        })
     }
 
     return output;
