@@ -382,6 +382,8 @@ const startUp = async()=>{
 
         const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
         writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
+
+        console.log(new Date(), `successfully processed data for ${dataUSCounties.length} Counties`, '\n');
         
     } catch(err){
         console.log(JSON.stringify(err))
@@ -393,7 +395,7 @@ const writeToJson = (data, outputPath)=>{
     const json = JSON.stringify(data);
     // const outputFileName = 'data.json';
     fs.writeFile(outputPath, json, 'utf8', ()=>{
-        console.log(new Date(), `${outputPath} is saved`, '\n');
+        // console.log(new Date(), `${outputPath} is saved`, '\n');
     });
 };
 
