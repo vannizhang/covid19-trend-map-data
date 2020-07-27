@@ -366,6 +366,8 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
 const startUp = async()=>{
 
     makeFolder(PUBLIC_FOLDER_PATH);
+
+    const startTime = new Date().getTime()
     
     try {
         const dataUSCounties = await fetchCovid19Data4USCounties();
@@ -383,7 +385,10 @@ const startUp = async()=>{
         const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
         writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
 
-        console.log(new Date(), `successfully processed data for ${dataUSCounties.length} Counties`, '\n');
+        const endTime = new Date();
+        const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
+
+        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes} min`, '\n');
         
     } catch(err){
         console.log(JSON.stringify(err))
