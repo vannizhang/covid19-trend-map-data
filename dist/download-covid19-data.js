@@ -14,8 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require('fs');
 const path = require('path');
+const qs = require('qs');
 const axios_1 = __importDefault(require("axios"));
-const url_1 = require("url");
 const US_Counties_json_1 = __importDefault(require("./US-Counties.json"));
 const US_States_json_1 = __importDefault(require("./US-States.json"));
 const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
@@ -112,15 +112,13 @@ const fetchCovid19CasesByTimeData = ({ where, returnStateLevelData = false }) =>
         : {
             f: 'json',
             where,
-            outFields: ['dt', 'Confirmed', 'Deaths', 'NewCases', 'Population'],
+            outFields: "dt,Confirmed,Deaths,NewCases,Population",
             orderByFields: 'dt'
         };
-    const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/`;
-    const { data } = yield axios_1.default.get(requestUrl, {
-        params: new url_1.URLSearchParams(params)
-    });
-    return data && data.features
-        ? data.features
+    const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?${qs.stringify(params)}`;
+    const res = yield axios_1.default.get(requestUrl);
+    return res.data && res.data.features
+        ? res.data.features
         : [];
 });
 const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, function* () {

@@ -1,9 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const qs = require('qs');
 
 import axios from 'axios';
-import { URLSearchParams } from 'url';
-
 import USCounties from './US-Counties.json';
 import USStates from './US-States.json';
 
@@ -200,18 +199,16 @@ const fetchCovid19CasesByTimeData = async({
         : {
             f: 'json',
             where,
-            outFields: ['dt','Confirmed','Deaths','NewCases','Population'],
+            outFields: "dt,Confirmed,Deaths,NewCases,Population",
             orderByFields: 'dt'
         }
 
-    const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/`;
+    const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?${qs.stringify(params)}`;
+    const res = await axios.get(requestUrl);
+    // console.log(requestUrl);
 
-    const { data } = await axios.get(requestUrl, {
-        params: new URLSearchParams(params)
-    });
-
-    return data && data.features 
-        ? data.features 
+    return res.data && res.data.features 
+        ? res.data.features 
         : [];
 };
 
