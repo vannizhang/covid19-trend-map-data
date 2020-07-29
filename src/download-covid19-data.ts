@@ -302,25 +302,39 @@ const calculatePath = (values: number[], ymax?:number): PathData=>{
 
     const AspectRatio = .75;
 
+    // if ( ymax < xmax ){
+    //     // console.log('use xmax as ymax', ymax, xmax);	
+    //     ymax = xmax;
+
+    //     path.forEach((p) => {
+    //         p[1] = Math.round(p[1] * AspectRatio);
+    //     });
+
+    // } else {	            
+
+    //     const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
+    //     // console.log('ratio', ratio)
+    
+    //     path.forEach((p) => {
+    //         p[1] = Math.round(p[1] * ratio * AspectRatio);
+    //     });
+        
+    //     ymax = xmax //Math.ceil(ymax * ratio);
+    // } 
+
     if ( ymax < xmax ){
         // console.log('use xmax as ymax', ymax, xmax);	
-        ymax = xmax;
-
-        path.forEach((p) => {
-            p[1] = Math.round(p[1] * AspectRatio);
-        });
-
-    } else {	            
-
-        const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
-        // console.log('ratio', ratio)
-    
-        path.forEach((p) => {
-            p[1] = Math.round(p[1] * ratio * AspectRatio);
-        });
-        
-        ymax = xmax //Math.ceil(ymax * ratio);
+        ymax = 25;
     } 
+
+    const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
+    // console.log('ratio', ratio)
+
+    path.forEach((p) => {
+        p[1] = Math.round(p[1] * ratio * AspectRatio);
+    });
+    
+    ymax = xmax //Math.ceil(ymax * ratio);
 
     return {
         path,
@@ -388,7 +402,7 @@ const startUp = async()=>{
         const endTime = new Date();
         const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
 
-        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes} min`, '\n');
+        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
         
     } catch(err){
         console.log(JSON.stringify(err))

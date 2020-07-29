@@ -176,18 +176,13 @@ const calculatePath = (values, ymax) => {
     ymax = ymax || values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY);
     const AspectRatio = .75;
     if (ymax < xmax) {
-        ymax = xmax;
-        path.forEach((p) => {
-            p[1] = Math.round(p[1] * AspectRatio);
-        });
+        ymax = 25;
     }
-    else {
-        const ratio = Math.floor((xmax / ymax) * 100000) / 100000;
-        path.forEach((p) => {
-            p[1] = Math.round(p[1] * ratio * AspectRatio);
-        });
-        ymax = xmax;
-    }
+    const ratio = Math.floor((xmax / ymax) * 100000) / 100000;
+    path.forEach((p) => {
+        p[1] = Math.round(p[1] * ratio * AspectRatio);
+    });
+    ymax = xmax;
     return {
         path,
         frame: {
@@ -227,7 +222,7 @@ const startUp = () => __awaiter(void 0, void 0, void 0, function* () {
         writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
         const endTime = new Date();
         const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60);
-        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes} min`, '\n');
+        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
     }
     catch (err) {
         console.log(JSON.stringify(err));
