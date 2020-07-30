@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,16 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require('fs');
 const path = require('path');
 const qs = require('qs');
-const axios_1 = __importDefault(require("axios"));
-const US_Counties_json_1 = __importDefault(require("./US-Counties.json"));
-const US_States_json_1 = __importDefault(require("./US-States.json"));
+const axios = require('axios');
+const USCounties = require(path.join(__dirname, 'US-Counties.json'));
+const USStates = require(path.join(__dirname, 'US-States.json'));
 const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
 const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
 const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
@@ -78,7 +73,7 @@ const calcMovingAve = ({ features, totalPopulation, numOfDays = 7 }) => {
         newCases: weeklyAveNewCases
     };
 };
-const fetchCovid19CasesByTimeData = ({ where, returnStateLevelData = false }) => __awaiter(void 0, void 0, void 0, function* () {
+const fetchCovid19CasesByTimeData = ({ where, returnStateLevelData = false }) => __awaiter(this, void 0, void 0, function* () {
     const params = returnStateLevelData
         ? {
             f: 'json',
@@ -116,14 +111,14 @@ const fetchCovid19CasesByTimeData = ({ where, returnStateLevelData = false }) =>
             orderByFields: 'dt'
         };
     const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?${qs.stringify(params)}`;
-    const res = yield axios_1.default.get(requestUrl);
+    const res = yield axios.get(requestUrl);
     return res.data && res.data.features
         ? res.data.features
         : [];
 });
-const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, function* () {
+const fetchCovid19Data4USStates = () => __awaiter(this, void 0, void 0, function* () {
     const output = [];
-    const { features } = US_States_json_1.default;
+    const { features } = USStates;
     for (let i = 0, len = features.length; i < len; i++) {
         const feature = features[i];
         const { attributes, geometry } = feature;
@@ -145,9 +140,9 @@ const fetchCovid19Data4USStates = () => __awaiter(void 0, void 0, void 0, functi
     }
     return output;
 });
-const fetchCovid19Data4USCounties = () => __awaiter(void 0, void 0, void 0, function* () {
+const fetchCovid19Data4USCounties = () => __awaiter(this, void 0, void 0, function* () {
     const output = [];
-    const { features } = US_Counties_json_1.default;
+    const { features } = USCounties;
     for (let i = 0, len = features.length; i < len; i++) {
         const county = features[i];
         const { attributes, geometry } = county;
@@ -208,21 +203,16 @@ const convertCovid19TrendDataToPath = (data) => {
     });
     return covid19TrendDataAsPaths;
 };
-const startUp = () => __awaiter(void 0, void 0, void 0, function* () {
+const startUp = () => __awaiter(this, void 0, void 0, function* () {
     makeFolder(PUBLIC_FOLDER_PATH);
     const startTime = new Date().getTime();
     try {
-        const dataUSCounties = yield fetchCovid19Data4USCounties();
-        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
-        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
-        writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
         const dataUSStates = yield fetchCovid19Data4USStates();
         writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
         const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
         writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
         const endTime = new Date();
         const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60);
-        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
     }
     catch (err) {
         console.log(JSON.stringify(err));
