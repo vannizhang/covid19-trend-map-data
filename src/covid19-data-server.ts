@@ -11,7 +11,7 @@ app.use(function(req, res, next) {
     next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.resolve(__dirname, 'public')));
 
 app.listen(port, function () {
     console.log('app listening on port ' + port);
