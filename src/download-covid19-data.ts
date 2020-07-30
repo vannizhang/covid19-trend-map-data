@@ -3,8 +3,8 @@ const path = require('path');
 const qs = require('qs');
 const axios = require('axios');
 
-const USCounties = require(path.join(__dirname, 'US-Counties.json'));
-const USStates = require(path.join(__dirname, 'US-States.json'));
+import * as USCounties from './US-Counties.json';
+import * as USStates from './US-States.json';
 
 const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
 
