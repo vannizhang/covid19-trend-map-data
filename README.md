@@ -1,9 +1,9 @@
 # covid19-trend-map-data
 
-1. run `tsc` to compile .js files into `dist` folder
+- push changes to remote origin
 
-2. push changes to remote origin
+- go to VPS and pull the changes
 
-3. go to VPS and pull the changes
+- pull changes from remote repo and run `tsc` to compile `.js` files into `dist` folder
 
-4. restart server.js
+- run `./starter.sh` tp restart `covid19-data-server.js`
