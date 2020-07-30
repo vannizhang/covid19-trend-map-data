@@ -21,10 +21,4 @@ app.listen(port, function () {
 app.get('/', function(req, res) {
     res.json({"version": "0.1"});
     // res.sendFile(path.join(__dirname + '/index.html'));
-
-    console.log(path.resolve(__dirname, 'public'));
-    console.log(path.join(__dirname, 'public'));
-    console.log(__dirname + 'public');
-    console.log(path.join(parentDir, 'public'));
-    console.log(parentDir);
 });
