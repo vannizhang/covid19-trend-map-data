@@ -353,7 +353,7 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
 
     const covid19TrendDataAsPaths = data.map(d=>{
         const {
-            attributes,
+            // attributes,
             geometry,
             confirmed,
             deaths,
@@ -365,7 +365,7 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
         const pathNewCases = calculatePath(newCases);
 
         return {
-            attributes,
+            // attributes,
             geometry,
             confirmed: pathConfirmed,
             deaths: pathDeaths,
