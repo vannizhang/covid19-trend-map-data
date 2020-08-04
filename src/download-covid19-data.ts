@@ -351,27 +351,37 @@ const calculatePath = (values: number[], ymax?:number): PathData=>{
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
 const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendDataAsPaths[]=>{
 
-    const covid19TrendDataAsPaths = data.map(d=>{
-        const {
-            // attributes,
-            geometry,
-            confirmed,
-            deaths,
-            newCases
-        } = d;
+    const covid19TrendDataAsPaths = data
+        .map(d=>{
+            const {
+                // attributes,
+                geometry,
+                confirmed,
+                deaths,
+                newCases
+            } = d;
 
-        const pathConfirmed = calculatePath(confirmed);
-        const pathDeaths = calculatePath(deaths);
-        const pathNewCases = calculatePath(newCases);
+            const pathConfirmed = calculatePath(confirmed);
+            const pathDeaths = calculatePath(deaths);
+            const pathNewCases = calculatePath(newCases);
 
-        return {
-            // attributes,
-            geometry,
-            confirmed: pathConfirmed,
-            deaths: pathDeaths,
-            newCases: pathNewCases
-        }
-    });
+            return {
+                // attributes,
+                geometry,
+                confirmed: pathConfirmed,
+                deaths: pathDeaths,
+                newCases: pathNewCases
+            }
+        })
+        .filter(d=>{
+            const isBadPath = d.confirmed.path.length === 0 || d.deaths.path.length === 0 || d.newCases.path.length === 0;
+
+            if(isBadPath){
+                console.log(`found item with bad path: ${JSON.stringify(d)}`)
+            }
+
+            return !isBadPath;
+        })
 
     return covid19TrendDataAsPaths;
 
