@@ -322,7 +322,7 @@ const calculatePath = (values: number[], ymax?:number): PathData=>{
     //     ymax = xmax //Math.ceil(ymax * ratio);
     // } 
 
-    if ( ymax < xmax ){
+    if ( ymax <= 25 ){
         // console.log('use xmax as ymax', ymax, xmax);	
         ymax = 25;
     } 
