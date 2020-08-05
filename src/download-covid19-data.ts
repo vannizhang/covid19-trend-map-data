@@ -55,13 +55,13 @@ type Covid19TrendDataAsPaths = FeatureFromJSON & {
     newCases: PathData;
 } 
 
-type CalcMovingAveOptions = {
+type CalcWeeklyAveOptions = {
     features:Covid19CasesByTimeQueryResultFeature[];
     totalPopulation?: number;
     numOfDays?: number;
 };
 
-type Calc7DaysAveResponse = {
+type CalcWeeklyAveResponse = {
     confirmed: number[],
     deaths: number[],
     newCases: number[],
@@ -70,53 +70,98 @@ type Calc7DaysAveResponse = {
     // newCasesPer100k?: number[]
 }
 
-const calcMovingAve = ({
+const calcWeeklyAve = ({
     features, 
     totalPopulation,
     numOfDays = 7
-}:CalcMovingAveOptions):Calc7DaysAveResponse=>{
+}:CalcWeeklyAveOptions):CalcWeeklyAveResponse=>{
 
-    const movingAveValues: number[][] = [];
+    // const movingAveValues: number[][] = [];
 
-    // calculate the 7 day moving ave (confirmed, death and new cases per 100k) for each feature,
-    // and save the values into movingAveValues
-    for(let i = features.length - 1; i > 0; i--){
+    // // calculate the 7 day moving ave (confirmed, death and new cases per 100k) for each feature,
+    // // and save the values into movingAveValues
+    // for(let i = features.length - 1; i > 0; i--){
 
-        let sumConfirmed = 0;
-        let sumDeaths = 0;
-        let sumNewCases = 0;
+    //     let sumConfirmed = 0;
+    //     let sumDeaths = 0;
+    //     let sumNewCases = 0;
 
-        const startIndex = i - 6 >= 0 ? i - 6 : 0;
-        const endIndex = i + 1;
+    //     const startIndex = i - 6 >= 0 ? i - 6 : 0;
+    //     const endIndex = i + 1;
 
-        const featuresInPastWeek = features
-            .slice(startIndex, endIndex);
+    //     const featuresInPastWeek = features
+    //         .slice(startIndex, endIndex);
 
-        featuresInPastWeek.forEach(d=>{
+    //     featuresInPastWeek.forEach(d=>{
 
-            const { Confirmed, Deaths, NewCases } = d.attributes
+    //         const { Confirmed, Deaths, NewCases } = d.attributes
 
-            sumConfirmed += Confirmed;
-            sumDeaths += Deaths;
-            sumNewCases += NewCases;
-        });
+    //         sumConfirmed += Confirmed;
+    //         sumDeaths += Deaths;
+    //         sumNewCases += NewCases;
+    //     });
 
-        const movingAvgConfirmedPer100k = Math.round(( (sumConfirmed / numOfDays ) / totalPopulation ) * 100000 );
-        const movingAvgDeathsPer100k = Math.round((sumDeaths / numOfDays/ totalPopulation ) * 100000);
-        const movingAvgNewCasesPer100k = Math.round((sumNewCases / numOfDays/ totalPopulation ) * 100000);
+    //     const movingAvgConfirmedPer100k = Math.round(( (sumConfirmed / numOfDays ) / totalPopulation ) * 100000 );
+    //     const movingAvgDeathsPer100k = Math.round((sumDeaths / numOfDays/ totalPopulation ) * 100000);
+    //     const movingAvgNewCasesPer100k = Math.round((sumNewCases / numOfDays/ totalPopulation ) * 100000);
 
-        movingAveValues.unshift([
-            movingAvgConfirmedPer100k,
-            movingAvgDeathsPer100k,
-            movingAvgNewCasesPer100k
-        ])
-    }
+    //     movingAveValues.unshift([
+    //         movingAvgConfirmedPer100k,
+    //         movingAvgDeathsPer100k,
+    //         movingAvgNewCasesPer100k
+    //     ])
+    // }
+
+    // let weeklyAveConfirmed: number[] = [];
+    // let weeklyAveDeaths: number[] = [];
+    // let weeklyAveNewCases: number[] = [];
+
+    // let indexOfLastItemInGroup = movingAveValues.length - 1;
+
+    // for(let i = indexOfLastItemInGroup; i >= 0; i --){
+
+    //     const startIndex = indexOfLastItemInGroup - (numOfDays - 1);
+
+    //     if(i === indexOfLastItemInGroup && startIndex >= 0 ){
+
+    //         const movingAveValuesForSelectedGroup = movingAveValues.slice(startIndex, indexOfLastItemInGroup);
+
+    //         let confirmedSum = 0;
+    //         let deathSum = 0;
+    //         let newCasesSum = 0;
+
+    //         movingAveValuesForSelectedGroup.forEach(item=>{
+    //             const [
+    //                 Confirmed,
+    //                 Deaths,
+    //                 NewCases
+    //             ] = item;
+
+    //             confirmedSum += Confirmed >= 0 ? Confirmed : 0;
+    //             deathSum += Deaths >= 0 ? Deaths : 0;
+    //             newCasesSum += NewCases >= 0 ? NewCases : 0;
+    //         })
+    
+    //         weeklyAveConfirmed.unshift( Math.round(confirmedSum/numOfDays) );
+    //         weeklyAveDeaths.unshift( Math.round(deathSum/numOfDays) );
+    //         weeklyAveNewCases.unshift( Math.round(newCasesSum/numOfDays) );
+
+    //         indexOfLastItemInGroup = startIndex - 1;
+    //     }
+
+    // }
+
+    // return {
+    //     confirmed: weeklyAveConfirmed,
+    //     deaths: weeklyAveDeaths,
+    //     newCases: weeklyAveNewCases
+    // }
 
     let weeklyAveConfirmed: number[] = [];
     let weeklyAveDeaths: number[] = [];
     let weeklyAveNewCases: number[] = [];
 
-    let indexOfLastItemInGroup = movingAveValues.length - 1;
+    let indexOfLastItemInGroup = features.length - 1;
 
     for(let i = indexOfLastItemInGroup; i >= 0; i --){
 
@@ -124,27 +169,31 @@ const calcMovingAve = ({
 
         if(i === indexOfLastItemInGroup && startIndex >= 0 ){
 
-            const movingAveValuesForSelectedGroup = movingAveValues.slice(startIndex, indexOfLastItemInGroup);
+            const itemsForSelectedGroup = features.slice(startIndex, indexOfLastItemInGroup);
 
             let confirmedSum = 0;
             let deathSum = 0;
             let newCasesSum = 0;
 
-            movingAveValuesForSelectedGroup.forEach(item=>{
-                const [
+            itemsForSelectedGroup.forEach(item=>{
+                const {
                     Confirmed,
                     Deaths,
                     NewCases
-                ] = item;
+                } = item.attributes;
 
                 confirmedSum += Confirmed >= 0 ? Confirmed : 0;
                 deathSum += Deaths >= 0 ? Deaths : 0;
                 newCasesSum += NewCases >= 0 ? NewCases : 0;
-            })
+            });
+
+            const aveConfirmedPer100k = Math.round(((confirmedSum / numOfDays ) / totalPopulation ) * 100000 );
+            const aveDeathPer100k = Math.round(((deathSum / numOfDays ) / totalPopulation ) * 100000 );
+            const aveNewCasesPer100k = Math.round(((newCasesSum / numOfDays ) / totalPopulation ) * 100000 );
     
-            weeklyAveConfirmed.unshift( Math.round(confirmedSum/numOfDays) );
-            weeklyAveDeaths.unshift( Math.round(deathSum/numOfDays) );
-            weeklyAveNewCases.unshift( Math.round(newCasesSum/numOfDays) );
+            weeklyAveConfirmed.unshift(aveConfirmedPer100k);
+            weeklyAveDeaths.unshift(aveDeathPer100k);
+            weeklyAveNewCases.unshift(aveNewCasesPer100k);
 
             indexOfLastItemInGroup = startIndex - 1;
         }
@@ -233,7 +282,7 @@ const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
             confirmed,
             deaths,
             newCases,
-        } = calcMovingAve({
+        } = calcWeeklyAve({
             features: results,
             totalPopulation: attributes.POPULATION
         });
@@ -273,7 +322,7 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
             confirmed,
             deaths,
             newCases,
-        } = calcMovingAve({
+        } = calcWeeklyAve({
             features: results,
             totalPopulation: attributes.POPULATION
         });
