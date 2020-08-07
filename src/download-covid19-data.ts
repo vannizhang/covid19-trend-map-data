@@ -30,6 +30,7 @@ type Covid19CasesByTimeQueryResultFeature = {
         Confirmed: number;
         Deaths: number;
         NewCases: number;
+        Population: number;
     }
 }
 
@@ -278,13 +279,19 @@ const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
             returnStateLevelData: true
         });
 
+        const totalPopulation = results[0] 
+            ? results[0].attributes.Population 
+            : attributes.POPULATION;
+
+        attributes.POPULATION = totalPopulation;
+
         const {
             confirmed,
             deaths,
             newCases,
         } = calcWeeklyAve({
             features: results,
-            totalPopulation: attributes.POPULATION
+            totalPopulation
         });
         // console.log(confirmed, deaths, newCases)
 
@@ -318,13 +325,19 @@ const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
             where: `FIPS = '${attributes.FIPS}'`
         });
 
+        const totalPopulation = results[0] 
+            ? results[0].attributes.Population 
+            : attributes.POPULATION;
+
+        attributes.POPULATION = totalPopulation;
+
         const {
             confirmed,
             deaths,
             newCases,
         } = calcWeeklyAve({
             features: results,
-            totalPopulation: attributes.POPULATION
+            totalPopulation
         });
 
         output.push({
