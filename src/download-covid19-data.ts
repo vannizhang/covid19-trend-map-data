@@ -15,6 +15,7 @@ const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
 const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
 
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
+const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
 
 type FeatureFromJSON = {
     attributes?: any;
@@ -69,7 +70,22 @@ type CalcWeeklyAveResponse = {
     // confirmedPer100k?: number[],
     // deathsPer100k?: number[],
     // newCasesPer100k?: number[]
-}
+};
+
+type COVID19TrendType = 'Emergent' | 'Spreading' | 'Epidemic' | 'Controlled' | 'End Stage' | 'Zero Cases';
+
+type USCountiesCOVID19TrendCategoryFeature = {
+    attributes: {
+        Cty_FIPS: string;
+        Cty_NAME: string;
+        ST_ABBREV: string;
+        TrendType: COVID19TrendType;
+    }
+};
+
+const USCountiesCOVID19TrendCategoryLookup: {
+    [key:string]: COVID19TrendType
+} = {};
 
 const calcWeeklyAve = ({
     features, 
@@ -411,12 +427,12 @@ const calculatePath = (values: number[], ymax?:number): PathData=>{
 }
 
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
-const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendDataAsPaths[]=>{
+const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttributes?:boolean): Covid19TrendDataAsPaths[]=>{
 
     const covid19TrendDataAsPaths = data
         .map(d=>{
             const {
-                // attributes,
+                attributes,
                 geometry,
                 confirmed,
                 deaths,
@@ -427,13 +443,19 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
             const pathDeaths = calculatePath(deaths);
             const pathNewCases = calculatePath(newCases);
 
-            return {
+            const outputData = {
                 // attributes,
                 geometry,
                 confirmed: pathConfirmed,
                 deaths: pathDeaths,
                 newCases: pathNewCases
+            } as Covid19TrendDataAsPaths;
+
+            if(includeAttributes){
+                outputData.attributes = attributes
             }
+
+            return outputData;
         })
         .filter(d=>{
             const isBadPath = d.confirmed.path.length === 0 || d.deaths.path.length === 0 || d.newCases.path.length === 0;
@@ -449,6 +471,57 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[]): Covid19TrendD
 
 }
 
+// query trend category from  https://www.arcgis.com/home/item.html?id=49c25e0ce50340e08fcfe51fe6f26d1e#data
+const fetchUSCountiesCOVID19TrendCategory = async()=>{
+
+    const params = {
+        f: 'json',
+        where: '1=1',
+        outFields: "Cty_FIPS, Cty_NAME,ST_ABBREV,TrendType",
+        orderByFields: 'Cty_FIPS',
+        returnGeometry: false
+    };
+
+    const params4feature = {
+        ...params,
+        resultOffset: 2000
+    };
+
+    const res4FeaturesSets1 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params)}`);
+    // console.log(res4FeaturesSets1.data);
+
+    const res4FeaturesSets2 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params4feature)}`);
+    // console.log(res4FeaturesSets2.data);
+
+    const features:USCountiesCOVID19TrendCategoryFeature[] = [
+        ...res4FeaturesSets1.data.features,
+        ...res4FeaturesSets2.data.features
+    ];
+
+    features.forEach(feature=>{
+        const { attributes } = feature;
+        const { Cty_FIPS, TrendType } = attributes;
+
+        USCountiesCOVID19TrendCategoryLookup[Cty_FIPS] = TrendType;
+    });
+
+    return USCountiesCOVID19TrendCategoryLookup;
+}
+
+const getCovid19Data4USCountiesWithTrendType = (features: Covid19TrendData[])=>{
+
+    return features.map(d=>{
+        const { FIPS } = d.attributes;
+        const trendType = USCountiesCOVID19TrendCategoryLookup[FIPS];
+
+        d.attributes = { 
+            trendType
+        };
+
+        return d;
+    })
+}
+
 const startUp = async()=>{
 
     makeFolder(PUBLIC_FOLDER_PATH);
@@ -456,11 +529,16 @@ const startUp = async()=>{
     const startTime = new Date().getTime()
     
     try {
+        await fetchUSCountiesCOVID19TrendCategory();
+        // console.log(USCountiesCOVID19TrendCategoryLookup)
+
         const dataUSCounties = await fetchCovid19Data4USCounties();
         writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
         // console.log(JSON.stringify(data));
-        
-        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCounties);
+
+        const dataUSCountiesWithTrendType = getCovid19Data4USCountiesWithTrendType(dataUSCounties)
+
+        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
         writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
 
 
