@@ -14,6 +14,8 @@ const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties
 const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
 const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
 
+const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
+
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
 
@@ -83,8 +85,22 @@ type USCountiesCOVID19TrendCategoryFeature = {
     }
 };
 
+type COVID19LatestNumbersItem = {
+    Confirmed: number;
+    Deaths: number;
+    NewCases: number;
+    Population: number;
+};
+
+type USStatesAndCountiesDataJSON = typeof USStates | typeof USCounties;
+
 const USCountiesCOVID19TrendCategoryLookup: {
     [key:string]: COVID19TrendType
+} = {};
+
+// this table will be used by the app to populate tooltip
+const COVID19LatestNumbers: {
+    [key: string]: COVID19LatestNumbersItem
 } = {};
 
 const calcWeeklyAve = ({
@@ -92,87 +108,6 @@ const calcWeeklyAve = ({
     totalPopulation,
     numOfDays = 7
 }:CalcWeeklyAveOptions):CalcWeeklyAveResponse=>{
-
-    // const movingAveValues: number[][] = [];
-
-    // // calculate the 7 day moving ave (confirmed, death and new cases per 100k) for each feature,
-    // // and save the values into movingAveValues
-    // for(let i = features.length - 1; i > 0; i--){
-
-    //     let sumConfirmed = 0;
-    //     let sumDeaths = 0;
-    //     let sumNewCases = 0;
-
-    //     const startIndex = i - 6 >= 0 ? i - 6 : 0;
-    //     const endIndex = i + 1;
-
-    //     const featuresInPastWeek = features
-    //         .slice(startIndex, endIndex);
-
-    //     featuresInPastWeek.forEach(d=>{
-
-    //         const { Confirmed, Deaths, NewCases } = d.attributes
-
-    //         sumConfirmed += Confirmed;
-    //         sumDeaths += Deaths;
-    //         sumNewCases += NewCases;
-    //     });
-
-    //     const movingAvgConfirmedPer100k = Math.round(( (sumConfirmed / numOfDays ) / totalPopulation ) * 100000 );
-    //     const movingAvgDeathsPer100k = Math.round((sumDeaths / numOfDays/ totalPopulation ) * 100000);
-    //     const movingAvgNewCasesPer100k = Math.round((sumNewCases / numOfDays/ totalPopulation ) * 100000);
-
-    //     movingAveValues.unshift([
-    //         movingAvgConfirmedPer100k,
-    //         movingAvgDeathsPer100k,
-    //         movingAvgNewCasesPer100k
-    //     ])
-    // }
-
-    // let weeklyAveConfirmed: number[] = [];
-    // let weeklyAveDeaths: number[] = [];
-    // let weeklyAveNewCases: number[] = [];
-
-    // let indexOfLastItemInGroup = movingAveValues.length - 1;
-
-    // for(let i = indexOfLastItemInGroup; i >= 0; i --){
-
-    //     const startIndex = indexOfLastItemInGroup - (numOfDays - 1);
-
-    //     if(i === indexOfLastItemInGroup && startIndex >= 0 ){
-
-    //         const movingAveValuesForSelectedGroup = movingAveValues.slice(startIndex, indexOfLastItemInGroup);
-
-    //         let confirmedSum = 0;
-    //         let deathSum = 0;
-    //         let newCasesSum = 0;
-
-    //         movingAveValuesForSelectedGroup.forEach(item=>{
-    //             const [
-    //                 Confirmed,
-    //                 Deaths,
-    //                 NewCases
-    //             ] = item;
-
-    //             confirmedSum += Confirmed >= 0 ? Confirmed : 0;
-    //             deathSum += Deaths >= 0 ? Deaths : 0;
-    //             newCasesSum += NewCases >= 0 ? NewCases : 0;
-    //         })
-    
-    //         weeklyAveConfirmed.unshift( Math.round(confirmedSum/numOfDays) );
-    //         weeklyAveDeaths.unshift( Math.round(deathSum/numOfDays) );
-    //         weeklyAveNewCases.unshift( Math.round(newCasesSum/numOfDays) );
-
-    //         indexOfLastItemInGroup = startIndex - 1;
-    //     }
-
-    // }
-
-    // return {
-    //     confirmed: weeklyAveConfirmed,
-    //     deaths: weeklyAveDeaths,
-    //     newCases: weeklyAveNewCases
-    // }
 
     let weeklyAveConfirmed: number[] = [];
     let weeklyAveDeaths: number[] = [];
@@ -278,11 +213,11 @@ const fetchCovid19CasesByTimeData = async({
         : [];
 };
 
-const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
-
+const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Covid19TrendData[]>=>{
+    
     const output = [];
 
-    const { features } = USStates;
+    const { features } = data;
 
     for(let i = 0, len = features.length; i < len; i++){
 
@@ -290,83 +225,78 @@ const fetchCovid19Data4USStates = async():Promise<Covid19TrendData[]>=>{
 
         const { attributes, geometry } = feature;
 
-        const results = await fetchCovid19CasesByTimeData({
-            where: `ST_Name = '${attributes.STATE_NAME}'`,
-            returnStateLevelData: true
-        });
+        let results:Covid19CasesByTimeQueryResultFeature[] = [];
+        let FIPS:string = '';
 
-        const totalPopulation = results[0] 
-            ? results[0].attributes.Population 
-            : attributes.POPULATION;
+        if("FIPS" in attributes){
+            FIPS = attributes.FIPS;
+            results = await fetchCovid19CasesByTimeData({
+                where: `FIPS = '${attributes.FIPS}'`
+            });
+        }
 
-        attributes.POPULATION = totalPopulation;
+        if("STATE_NAME" in attributes){
+            FIPS = attributes.STATE_FIPS;
+            results = await fetchCovid19CasesByTimeData({
+                where: `ST_Name = '${attributes.STATE_NAME}'`,
+                returnStateLevelData: true
+            });
+        }
 
-        const {
-            confirmed,
-            deaths,
-            newCases,
-        } = calcWeeklyAve({
-            features: results,
-            totalPopulation
-        });
-        // console.log(confirmed, deaths, newCases)
+        if(results.length){
 
-        output.push({
-            attributes,
-            confirmed,
-            deaths,
-            newCases,
-            geometry
-        })
+            const totalPopulation = results[0]?.attributes?.Population || attributes.POPULATION;
 
+            attributes.POPULATION = totalPopulation;
+
+            const {
+                confirmed,
+                deaths,
+                newCases,
+            } = calcWeeklyAve({
+                features: results,
+                totalPopulation
+            });
+            // console.log(confirmed, deaths, newCases)
+
+            saveToCOVID19LatestNumbers(FIPS, results);
+
+            output.push({
+                attributes,
+                confirmed,
+                deaths,
+                newCases,
+                geometry
+            })
+        }
     }
 
     return output;
 
 }
 
-const fetchCovid19Data4USCounties = async():Promise<Covid19TrendData[]>=>{
+const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQueryResultFeature[])=>{
 
-    const output = [];
+    const indexOfLatestFeature = features.length - 1;
 
-    const { features } = USCounties;
+    const latestFeature = features[indexOfLatestFeature];
 
-    for(let i = 0, len = features.length; i < len; i++){
+    const { attributes } = latestFeature;
 
-        const county = features[i];
+    const { dt, Confirmed, Deaths, Population, NewCases } = attributes;
 
-        const { attributes, geometry } = county;
+    const [year, month, day] = dt.split('-');
+    const date = new Date(+year, +month - 1, +day);
+    const dayOfWeek = date.getDay();
+    const featureBeginingOfCurrentWeek = features[ indexOfLatestFeature - dayOfWeek ];
 
-        const results = await fetchCovid19CasesByTimeData({
-            where: `FIPS = '${attributes.FIPS}'`
-        });
-
-        const totalPopulation = results[0] 
-            ? results[0].attributes.Population 
-            : attributes.POPULATION;
-
-        attributes.POPULATION = totalPopulation;
-
-        const {
-            confirmed,
-            deaths,
-            newCases,
-        } = calcWeeklyAve({
-            features: results,
-            totalPopulation
-        });
-
-        output.push({
-            attributes,
-            geometry,
-            confirmed,
-            deaths,
-            newCases
-        })
+    COVID19LatestNumbers[FIPS] = {
+        Confirmed,
+        Deaths,
+        Population,
+        // new cases of this week
+        NewCases: latestFeature.attributes.Confirmed - featureBeginingOfCurrentWeek.attributes.Confirmed
     }
-
-    return output;
-
 };
 
 const calculatePath = (values: number[], ymax?:number): PathData=>{
@@ -532,7 +462,8 @@ const startUp = async()=>{
         await fetchUSCountiesCOVID19TrendCategory();
         // console.log(USCountiesCOVID19TrendCategoryLookup)
 
-        const dataUSCounties = await fetchCovid19Data4USCounties();
+        // handle Counties
+        const dataUSCounties = await fetchCovid19TrendData(USCounties);
         writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
         // console.log(JSON.stringify(data));
 
@@ -541,17 +472,19 @@ const startUp = async()=>{
         const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
         writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
 
-
-        const dataUSStates = await fetchCovid19Data4USStates();
+        // handle States
+        const dataUSStates = await fetchCovid19TrendData(USStates);
         writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
         // console.log(JSON.stringify(dataUSStates));
 
         const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
         writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
 
+        // save latest numbers
+        writeToJson(COVID19LatestNumbers, OUTPUT_JSON_LATEST_NUMBERS);
+
         const endTime = new Date();
         const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
-
         console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
         
     } catch(err){
