@@ -6,3 +6,4 @@ cp /root/covid19-trend-map-data/public/us-counties-paths.json /var/www/static.va
 cp /root/covid19-trend-map-data/public/us-counties.json /var/www/static.vannizhang.com/html/covid19
 cp /root/covid19-trend-map-data/public/us-states-paths.json /var/www/static.vannizhang.com/html/covid19
 cp /root/covid19-trend-map-data/public/us-states.json /var/www/static.vannizhang.com/html/covid19
+cp /root/covid19-trend-map-data/public/latest-numbers.json /var/www/static.vannizhang.com/html/covid19
