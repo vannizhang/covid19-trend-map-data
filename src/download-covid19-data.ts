@@ -287,15 +287,21 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
 
     const [year, month, day] = dt.split('-');
     const date = new Date(+year, +month - 1, +day);
+
     const dayOfWeek = date.getDay();
-    const featureBeginingOfCurrentWeek = features[ indexOfLatestFeature - dayOfWeek ];
+
+    const featureOfLastSunday = dayOfWeek === 0 
+        ? features[ indexOfLatestFeature - 6 ]
+        : features[ indexOfLatestFeature - dayOfWeek ];
+
+    const weeklyNewCases =  latestFeature.attributes.Confirmed - featureOfLastSunday.attributes.Confirmed;
 
     COVID19LatestNumbers[FIPS] = {
         Confirmed,
         Deaths,
         Population,
         // new cases of this week
-        NewCases: latestFeature.attributes.Confirmed - featureBeginingOfCurrentWeek.attributes.Confirmed
+        NewCases: weeklyNewCases
     }
 };
 
@@ -462,15 +468,15 @@ const startUp = async()=>{
         await fetchUSCountiesCOVID19TrendCategory();
         // console.log(USCountiesCOVID19TrendCategoryLookup)
 
-        // handle Counties
-        const dataUSCounties = await fetchCovid19TrendData(USCounties);
-        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
-        // console.log(JSON.stringify(data));
+        // // handle Counties
+        // const dataUSCounties = await fetchCovid19TrendData(USCounties);
+        // writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
+        // // console.log(JSON.stringify(data));
 
-        const dataUSCountiesWithTrendType = getCovid19Data4USCountiesWithTrendType(dataUSCounties)
+        // const dataUSCountiesWithTrendType = getCovid19Data4USCountiesWithTrendType(dataUSCounties)
 
-        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
-        writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
+        // const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
+        // writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
 
         // handle States
         const dataUSStates = await fetchCovid19TrendData(USStates);
@@ -483,9 +489,9 @@ const startUp = async()=>{
         // save latest numbers
         writeToJson(COVID19LatestNumbers, OUTPUT_JSON_LATEST_NUMBERS);
 
-        const endTime = new Date();
-        const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
-        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
+        // const endTime = new Date();
+        // const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
+        // console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
         
     } catch(err){
         console.log(JSON.stringify(err))
