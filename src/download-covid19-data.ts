@@ -90,6 +90,7 @@ type COVID19LatestNumbersItem = {
     Deaths: number;
     NewCases: number;
     Population: number;
+    TrendType: COVID19TrendType | '';
 };
 
 type USStatesAndCountiesDataJSON = typeof USStates | typeof USCounties;
@@ -301,7 +302,8 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
         Deaths,
         Population,
         // new cases of this week
-        NewCases: weeklyNewCases
+        NewCases: weeklyNewCases,
+        TrendType: USCountiesCOVID19TrendCategoryLookup[FIPS] || ''
     }
 };
 
