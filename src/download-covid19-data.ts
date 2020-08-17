@@ -307,56 +307,47 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
     }
 };
 
-const calculatePath = (values: number[], ymax?:number): PathData=>{
+const calculatePath = (values: number[], ymax:number): PathData=>{
 
-    const path = values.map((val, idx)=>[ idx, val ]);
+    const xmax = ymax * 0.4;
+    const xRatio = xmax / values.length;
 
-    const xmin = 0;
-    const ymin = 0;
-    const xmax = values.length;
-    ymax = ymax || values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY);
+    const path = values.map((val, index)=>{
 
-    const AspectRatio = .75;
+        const x = Math.round(xRatio * index);
+        const y = val <= ymax ? val : ymax;
 
-    // if ( ymax < xmax ){
+        return [x, y];
+    });
+
+    // const path = values.map((val, idx)=>[ idx, val ]);
+
+    // const xmin = 0;
+    // const ymin = 0;
+    // const xmax = values.length;
+
+    // ymax = ymax || values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY);
+    // const AspectRatio = .75;
+
+    // if ( ymax <= 25 ){
     //     // console.log('use xmax as ymax', ymax, xmax);	
-    //     ymax = xmax;
-
-    //     path.forEach((p) => {
-    //         p[1] = Math.round(p[1] * AspectRatio);
-    //     });
-
-    // } else {	            
-
-    //     const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
-    //     // console.log('ratio', ratio)
-    
-    //     path.forEach((p) => {
-    //         p[1] = Math.round(p[1] * ratio * AspectRatio);
-    //     });
-        
-    //     ymax = xmax //Math.ceil(ymax * ratio);
+    //     ymax = 25;
     // } 
 
-    if ( ymax <= 25 ){
-        // console.log('use xmax as ymax', ymax, xmax);	
-        ymax = 25;
-    } 
+    // const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
+    // // console.log('ratio', ratio)
 
-    const ratio = Math.floor(( xmax / ymax ) * 100000) / 100000;
-    // console.log('ratio', ratio)
-
-    path.forEach((p) => {
-        p[1] = Math.round(p[1] * ratio * AspectRatio);
-    });
+    // path.forEach((p) => {
+    //     p[1] = Math.round(p[1] * ratio * AspectRatio);
+    // });
     
-    ymax = xmax //Math.ceil(ymax * ratio);
+    // ymax = xmax //Math.ceil(ymax * ratio);
 
     return {
         path,
         frame: {
-            xmin,
-            ymin,
+            xmin: 0,
+            ymin: 0,
             xmax,
             ymax
         }
@@ -377,9 +368,9 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
                 newCases
             } = d;
 
-            const pathConfirmed = calculatePath(confirmed);
-            const pathDeaths = calculatePath(deaths);
-            const pathNewCases = calculatePath(newCases);
+            const pathConfirmed = calculatePath(confirmed, 4000);
+            const pathDeaths = calculatePath(deaths, 200);
+            const pathNewCases = calculatePath(newCases, 200);
 
             const outputData = {
                 // attributes,
