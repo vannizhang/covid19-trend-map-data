@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/bin/node /root/covid19-trend-map-data/dist/download-covid19-data.js >> /root/covid19-trend-map-data/log.txt 2>&1
+/bin/node /home/jinn8566@esri.com/covid19-trend-map-data/dist/download-covid19-data.js >> /home/jinn8566@esri.com/covid19-trend-map-data/log.txt 2>&1
