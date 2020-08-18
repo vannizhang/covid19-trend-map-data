@@ -7,17 +7,18 @@ import * as USCounties from './US-Counties.json';
 import * as USStates from './US-States.json';
 
 const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
-
 const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
 const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
-
 const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
 const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
-
 const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
 
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
+
+const YMaxNewCases = 200;
+let yMaxConfirmed = 0;
+let yMaxDeaths = 0;
 
 type FeatureFromJSON = {
     attributes?: any;
@@ -355,6 +356,35 @@ const calculatePath = (values: number[], ymax:number): PathData=>{
     
 }
 
+const calcYMax = (data: Covid19TrendData[])=>{
+    const maxValues4Confirmed: number[] = [];
+    const maxValues4Deaths: number[] = [];
+
+    data.forEach(d=>{
+        const {
+            confirmed,
+            deaths
+        } = d;
+
+        const maxDeath = max(deaths);
+        const maxConfirmed = max(confirmed);
+        
+        maxValues4Deaths.push(maxDeath);
+        maxValues4Confirmed.push(maxConfirmed);
+    });
+
+    const stdMaxConfirmed = calcStandardDeviation(maxValues4Confirmed);
+    const meanMaxConfirmed = calcMean(maxValues4Confirmed);
+
+    const stdMaxDeaths = calcStandardDeviation(maxValues4Deaths);
+    const meanMaxDeaths = calcMean(maxValues4Deaths);
+
+    return {
+        Confirmed: Math.round(meanMaxConfirmed + stdMaxConfirmed * 2),
+        Deaths:  Math.round(meanMaxDeaths + stdMaxDeaths * 2)
+    };
+};
+
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
 const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttributes?:boolean): Covid19TrendDataAsPaths[]=>{
 
@@ -368,9 +398,9 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
                 newCases
             } = d;
 
-            const pathConfirmed = calculatePath(confirmed, 4000);
-            const pathDeaths = calculatePath(deaths, 200);
-            const pathNewCases = calculatePath(newCases, 200);
+            const pathConfirmed = calculatePath(confirmed, yMaxConfirmed);
+            const pathDeaths = calculatePath(deaths, yMaxDeaths);
+            const pathNewCases = calculatePath(newCases, YMaxNewCases);
 
             const outputData = {
                 // attributes,
@@ -466,6 +496,17 @@ const startUp = async()=>{
         writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
         // console.log(JSON.stringify(data));
 
+        // calc YMax that will be used when calc trend path, the YMax should be 2 standard deviation of max confirmed and deaths from all counties
+        if(!yMaxConfirmed || !yMaxDeaths){
+            const {
+                Confirmed,
+                Deaths
+            } = calcYMax(dataUSCounties);
+
+            yMaxConfirmed = Confirmed;
+            yMaxDeaths = Deaths;
+        }
+
         const dataUSCountiesWithTrendType = getCovid19Data4USCountiesWithTrendType(dataUSCounties)
 
         const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
@@ -504,6 +545,23 @@ const makeFolder = (dir)=>{
     if (!fs.existsSync(dir)){
         fs.mkdirSync(dir);
     }
+};
+
+const max = (values:number[])=>{
+    return values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY)
+};
+
+const calcMean = (values:number[])=>{
+    const mean = values.reduce((a, b) => a + b) / values.length;
+    return mean;
+}
+
+const calcStandardDeviation = (values:number[])=>{
+    const n = values.length
+    const mean = calcMean(values);
+    const standardDeviation = Math.sqrt(values.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n);
+
+    return standardDeviation
 };
 
 startUp();
