@@ -310,7 +310,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
 
 const calculatePath = (values: number[], ymax:number): PathData=>{
 
-    const xmax = ymax * 0.4;
+    const xmax = Math.round(ymax * 0.4);
     const xRatio = xmax / values.length;
 
     const path = values.map((val, index)=>{

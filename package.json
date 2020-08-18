@@ -20,7 +20,6 @@
   "homepage": "https://github.com/vannizhang/covid19-trend-map-data#readme",
   "dependencies": {
     "axios": "^0.19.2",
-    "express": "^4.17.1",
     "jsonfile": "^6.0.1",
     "qs": "^6.9.4"
   },
