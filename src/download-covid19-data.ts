@@ -35,6 +35,7 @@ type Covid19CasesByTimeQueryResultFeature = {
         Deaths: number;
         NewCases: number;
         Population: number;
+        NewDeaths?: number;
     }
 }
 
@@ -50,7 +51,9 @@ type PathData = {
 
 type Covid19TrendData = FeatureFromJSON & {
     confirmed: number[],
+    // daily new deaths
     deaths: number[],
+    // daily new cases
     newCases: number[]
 } 
 
@@ -112,8 +115,23 @@ const calcWeeklyAve = ({
 }:CalcWeeklyAveOptions):CalcWeeklyAveResponse=>{
 
     let weeklyAveConfirmed: number[] = [];
-    let weeklyAveDeaths: number[] = [];
+    let weeklyAveNewDeaths: number[] = [];
     let weeklyAveNewCases: number[] = [];
+
+    features = features.map((feature, index)=>{
+
+        const previousFeature = index > 0 
+            ? features[index - 1] 
+            : undefined;
+
+        const newDeaths = previousFeature 
+            ? feature.attributes.Deaths - previousFeature.attributes.Deaths 
+            : 0;
+
+        feature.attributes.NewDeaths = newDeaths
+
+        return feature;
+    });
 
     let indexOfLastItemInGroup = features.length - 1;
 
@@ -132,21 +150,22 @@ const calcWeeklyAve = ({
             itemsForSelectedGroup.forEach(item=>{
                 const {
                     Confirmed,
-                    Deaths,
-                    NewCases
+                    // Deaths,
+                    NewCases,
+                    NewDeaths
                 } = item.attributes;
 
                 confirmedSum += Confirmed >= 0 ? Confirmed : 0;
-                deathSum += Deaths >= 0 ? Deaths : 0;
+                deathSum += NewDeaths >= 0 ? NewDeaths : 0;
                 newCasesSum += NewCases >= 0 ? NewCases : 0;
             });
 
             const aveConfirmedPer100k = Math.round(((confirmedSum / numOfDays ) / totalPopulation ) * 100000 );
-            const aveDeathPer100k = Math.round(((deathSum / numOfDays ) / totalPopulation ) * 100000 );
+            const aveNewDeathsPer100k = Math.round(((deathSum / numOfDays ) / totalPopulation ) * 100000 );
             const aveNewCasesPer100k = Math.round(((newCasesSum / numOfDays ) / totalPopulation ) * 100000 );
     
             weeklyAveConfirmed.unshift(aveConfirmedPer100k);
-            weeklyAveDeaths.unshift(aveDeathPer100k);
+            weeklyAveNewDeaths.unshift(aveNewDeathsPer100k);
             weeklyAveNewCases.unshift(aveNewCasesPer100k);
 
             indexOfLastItemInGroup = startIndex - 1;
@@ -156,7 +175,7 @@ const calcWeeklyAve = ({
 
     return {
         confirmed: weeklyAveConfirmed,
-        deaths: weeklyAveDeaths,
+        deaths: weeklyAveNewDeaths,
         newCases: weeklyAveNewCases
     }
 }
@@ -297,6 +316,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
         : features[ indexOfLatestFeature - dayOfWeek ];
 
     const weeklyNewCases =  latestFeature.attributes.Confirmed - featureOfLastSunday.attributes.Confirmed;
+    const weeklyNewDeaths =  latestFeature.attributes.Deaths - featureOfLastSunday.attributes.Deaths;
 
     COVID19LatestNumbers[FIPS] = {
         Confirmed,
@@ -310,12 +330,12 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
 
 const calculatePath = (values: number[], ymax:number): PathData=>{
 
-    const xmax = Math.round(ymax * 0.4);
+    const xmax = Math.ceil(ymax * 0.4);
     const xRatio = xmax / values.length;
 
     const path = values.map((val, index)=>{
 
-        const x = Math.round(xRatio * index);
+        const x = +Math.round(xRatio * index).toFixed(0);
         const y = val <= ymax ? val : ymax;
 
         return [x, y];
