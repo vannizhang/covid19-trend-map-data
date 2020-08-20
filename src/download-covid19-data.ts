@@ -6,6 +6,9 @@ const axios = require('axios');
 import * as USCounties from './US-Counties.json';
 import * as USStates from './US-States.json';
 
+// import * as USCountiesData from '../public/us-counties.json';
+// import * as USStatesData from '../public/us-states.json';
+
 const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
 const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
 const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
@@ -331,7 +334,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
 
 const calculatePath = (values: number[], ymax:number): PathData=>{
 
-    const xmax =  ymax; //Math.ceil(ymax * 0.4);
+    const xmax =  ymax; // Math.ceil(ymax * 0.8)
     const xRatio = xmax / values.length;
 
     const path = values.map((val, index)=>{
@@ -454,38 +457,43 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
 // query trend category from  https://www.arcgis.com/home/item.html?id=49c25e0ce50340e08fcfe51fe6f26d1e#data
 const fetchUSCountiesCOVID19TrendCategory = async()=>{
 
-    const params = {
-        f: 'json',
-        where: '1=1',
-        outFields: "Cty_FIPS, Cty_NAME,ST_ABBREV,TrendType",
-        orderByFields: 'Cty_FIPS',
-        returnGeometry: false
-    };
+    try {
+        const params = {
+            f: 'json',
+            where: '1=1',
+            outFields: "Cty_FIPS, Cty_NAME,ST_ABBREV,TrendType",
+            orderByFields: 'Cty_FIPS',
+            returnGeometry: false
+        };
+    
+        const params4feature = {
+            ...params,
+            resultOffset: 2000
+        };
+    
+        const res4FeaturesSets1 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params)}`);
+        // console.log(res4FeaturesSets1.data);
+    
+        const res4FeaturesSets2 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params4feature)}`);
+        // console.log(res4FeaturesSets2.data);
+    
+        const features:USCountiesCOVID19TrendCategoryFeature[] = [
+            ...res4FeaturesSets1.data.features,
+            ...res4FeaturesSets2.data.features
+        ];
+    
+        features.forEach(feature=>{
+            const { attributes } = feature;
+            const { Cty_FIPS, TrendType } = attributes;
+    
+            USCountiesCOVID19TrendCategoryLookup[Cty_FIPS] = TrendType;
+        });
+    
+        return USCountiesCOVID19TrendCategoryLookup;
 
-    const params4feature = {
-        ...params,
-        resultOffset: 2000
-    };
-
-    const res4FeaturesSets1 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params)}`);
-    // console.log(res4FeaturesSets1.data);
-
-    const res4FeaturesSets2 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params4feature)}`);
-    // console.log(res4FeaturesSets2.data);
-
-    const features:USCountiesCOVID19TrendCategoryFeature[] = [
-        ...res4FeaturesSets1.data.features,
-        ...res4FeaturesSets2.data.features
-    ];
-
-    features.forEach(feature=>{
-        const { attributes } = feature;
-        const { Cty_FIPS, TrendType } = attributes;
-
-        USCountiesCOVID19TrendCategoryLookup[Cty_FIPS] = TrendType;
-    });
-
-    return USCountiesCOVID19TrendCategoryLookup;
+    } catch(err){
+        console.error(err);
+    }
 }
 
 const getCovid19Data4USCountiesWithTrendType = (features: Covid19TrendData[])=>{
