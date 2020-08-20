@@ -19,7 +19,7 @@ const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
 
-const YMaxNewCases = 100;
+const YMaxNewCases = 200;
 let yMaxConfirmed = 0;
 let yMaxDeaths = 0;
 
@@ -231,7 +231,7 @@ const fetchCovid19CasesByTimeData = async({
 
     const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?${qs.stringify(params)}`;
     const res = await axios.get(requestUrl);
-    // console.log(requestUrl);
+    // console.log(`fetch data: ${where}`);
 
     return res.data && res.data.features 
         ? res.data.features 
@@ -332,9 +332,12 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
     }
 };
 
-const calculatePath = (values: number[], ymax:number): PathData=>{
+const calculatePath = (values: number[], ymax:number, xyRatio=1): PathData=>{
 
-    const xmax =  ymax; // Math.ceil(ymax * 0.8)
+    const xmax =  xyRatio === 1 
+        ? ymax 
+        : Math.ceil(ymax * xyRatio);
+
     const xRatio = xmax / values.length;
 
     const path = values.map((val, index)=>{
@@ -424,7 +427,7 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
 
             const pathConfirmed = calculatePath(confirmed, yMaxConfirmed);
             const pathDeaths = calculatePath(deaths, yMaxDeaths);
-            const pathNewCases = calculatePath(newCases, YMaxNewCases);
+            const pathNewCases = calculatePath(newCases, YMaxNewCases, .5);
 
             const outputData = {
                 // attributes,
