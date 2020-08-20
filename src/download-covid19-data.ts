@@ -16,7 +16,7 @@ const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers
 const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
 const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
 
-const YMaxNewCases = 200;
+const YMaxNewCases = 100;
 let yMaxConfirmed = 0;
 let yMaxDeaths = 0;
 
@@ -118,10 +118,12 @@ const calcWeeklyAve = ({
     let weeklyAveNewDeaths: number[] = [];
     let weeklyAveNewCases: number[] = [];
 
-    features = features.map((feature, index)=>{
+    for ( let i = 0, len = features.length; i < len; i++){
 
-        const previousFeature = index > 0 
-            ? features[index - 1] 
+        const feature = features[i];
+
+        const previousFeature = i > 0 
+            ? features[i - 1] 
             : undefined;
 
         const newDeaths = previousFeature 
@@ -129,9 +131,7 @@ const calcWeeklyAve = ({
             : 0;
 
         feature.attributes.NewDeaths = newDeaths
-
-        return feature;
-    });
+    }
 
     let indexOfLastItemInGroup = features.length - 1;
 
@@ -161,11 +161,12 @@ const calcWeeklyAve = ({
             });
 
             const aveConfirmedPer100k = Math.round(((confirmedSum / numOfDays ) / totalPopulation ) * 100000 );
-            const aveNewDeathsPer100k = Math.round(((deathSum / numOfDays ) / totalPopulation ) * 100000 );
+            // const aveNewDeathsPer100k = Math.round(((deathSum / numOfDays ) / totalPopulation ) * 100000 );
+            const aveNewDeathsPer10M = Math.round(((deathSum / numOfDays ) / totalPopulation ) * 10000000 );
             const aveNewCasesPer100k = Math.round(((newCasesSum / numOfDays ) / totalPopulation ) * 100000 );
     
             weeklyAveConfirmed.unshift(aveConfirmedPer100k);
-            weeklyAveNewDeaths.unshift(aveNewDeathsPer100k);
+            weeklyAveNewDeaths.unshift(aveNewDeathsPer10M);
             weeklyAveNewCases.unshift(aveNewCasesPer100k);
 
             indexOfLastItemInGroup = startIndex - 1;
@@ -330,7 +331,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
 
 const calculatePath = (values: number[], ymax:number): PathData=>{
 
-    const xmax = Math.ceil(ymax * 0.4);
+    const xmax =  ymax; //Math.ceil(ymax * 0.4);
     const xRatio = xmax / values.length;
 
     const path = values.map((val, index)=>{
