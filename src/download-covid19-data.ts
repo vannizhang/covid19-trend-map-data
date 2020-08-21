@@ -23,6 +23,8 @@ const YMaxNewCases = 200;
 let yMaxConfirmed = 0;
 let yMaxDeaths = 0;
 
+const FIPSCodes4NYCCounties: string[] = [ '36085', '36047', '36081', '36005' ];
+
 type FeatureFromJSON = {
     attributes?: any;
     geometry: {
@@ -334,6 +336,9 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
 
 const calculatePath = (values: number[], ymax:number, xyRatio=1): PathData=>{
 
+    const ymaxFromValues = values.reduce((prev, curr) => Math.max(prev, curr), Number.NEGATIVE_INFINITY);
+    const yRatio = ymaxFromValues > ymax ? ymax / ymaxFromValues : 1;
+
     const xmax =  xyRatio === 1 
         ? ymax 
         : Math.ceil(ymax * xyRatio);
@@ -343,7 +348,14 @@ const calculatePath = (values: number[], ymax:number, xyRatio=1): PathData=>{
     const path = values.map((val, index)=>{
 
         const x = +Math.round(xRatio * index).toFixed(0);
-        const y = val <= ymax ? val : ymax;
+        // const y = val <= ymax ? val : ymax;
+        let y = yRatio === 1 
+            ? val 
+            : +Math.round(val * yRatio).toFixed(0);
+
+        if( y > ymax ){
+            y = ymax;
+        }
 
         return [x, y];
     });
