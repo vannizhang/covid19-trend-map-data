@@ -6,25 +6,6 @@ const axios = require('axios');
 import * as USCounties from './US-Counties.json';
 import * as USStates from './US-States.json';
 
-// import * as USCountiesData from '../public/us-counties.json';
-// import * as USStatesData from '../public/us-states.json';
-
-const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
-const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
-const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
-const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
-const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
-const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
-
-const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
-const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
-
-const YMaxNewCases = 200;
-let yMaxConfirmed = 0;
-let yMaxDeaths = 0;
-
-const FIPSCodes4NYCCounties: string[] = [ '36085', '36047', '36081', '36005' ];
-
 type FeatureFromJSON = {
     attributes?: any;
     geometry: {
@@ -103,6 +84,29 @@ type COVID19LatestNumbersItem = {
 };
 
 type USStatesAndCountiesDataJSON = typeof USStates | typeof USCounties;
+
+const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
+const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
+const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
+const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
+const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
+const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
+
+const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
+const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
+
+const YMaxNewCases = 200;
+let yMaxConfirmed = 0;
+let yMaxDeaths = 0;
+
+const FIPSCodes4NYCCounties = [ '36085', '36047', '36081', '36005', '36061' ];
+const FIPSCode4NYCounty = '36061';
+const features4NYCCounties:{
+    [key:string]: {
+        results: Covid19CasesByTimeQueryResultFeature[];
+        feature: FeatureFromJSON 
+    }
+} = {};
 
 const USCountiesCOVID19TrendCategoryLookup: {
     [key:string]: COVID19TrendType
@@ -272,29 +276,36 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
 
         if(results.length){
 
-            const totalPopulation = results[0]?.attributes?.Population || attributes.POPULATION;
+            // save the NYC Counties results that will be used to fix data issue
+            if(FIPSCodes4NYCCounties.indexOf(FIPS) > -1){
+                features4NYCCounties[FIPS] = { results, feature };
 
-            attributes.POPULATION = totalPopulation;
+            } else {
 
-            const {
-                confirmed,
-                deaths,
-                newCases,
-            } = calcWeeklyAve({
-                features: results,
-                totalPopulation
-            });
-            // console.log(confirmed, deaths, newCases)
+                const totalPopulation = results[0]?.attributes?.Population || attributes.POPULATION;
 
-            saveToCOVID19LatestNumbers(FIPS, results);
-
-            output.push({
-                attributes,
-                confirmed,
-                deaths,
-                newCases,
-                geometry
-            })
+                attributes.POPULATION = totalPopulation;
+    
+                const {
+                    confirmed,
+                    deaths,
+                    newCases,
+                } = calcWeeklyAve({
+                    features: results,
+                    totalPopulation
+                });
+                // console.log(confirmed, deaths, newCases)
+    
+                saveToCOVID19LatestNumbers(FIPS, results);
+    
+                output.push({
+                    attributes,
+                    confirmed,
+                    deaths,
+                    newCases,
+                    geometry
+                })
+            }
         }
     }
 
@@ -523,7 +534,64 @@ const getCovid19Data4USCountiesWithTrendType = (features: Covid19TrendData[])=>{
 
         return d;
     })
-}
+};
+
+// JHU merged the data for couple NYC Counties (Quuens, Bronx, Brookly and etc) all into NY County,
+// therefore need to merge the data before calculate weekly ave
+const fixDataIssue4NYCCounties = (data:Covid19TrendData[]):Covid19TrendData[]=>{
+
+    // counties don't include NY County
+    const FIPSCodes4OtherNYCCounties = FIPSCodes4NYCCounties.filter(FIPS=> FIPS !== FIPSCode4NYCounty);
+    // console.log(FIPSCodes4OtherNYCCounties)
+
+    const NYCounty = features4NYCCounties[FIPSCode4NYCounty];
+    // console.log(NYCounty)
+
+    const { attributes, geometry } = NYCounty.feature;
+    
+    // add numbers from all NYC Counties into NY County
+    const features = NYCounty.results.map((feature, index)=>{
+
+        FIPSCodes4OtherNYCCounties.forEach(FIPS=>{
+
+            // get items for each NYC County ast specific date
+            const { results } = features4NYCCounties[FIPS];
+
+            if(results && results[index]){
+                const item = results[index];
+
+                feature.attributes.Confirmed += item.attributes.Confirmed;
+                feature.attributes.NewCases += item.attributes.NewCases;
+                feature.attributes.Deaths += item.attributes.Deaths;
+                feature.attributes.Population += item.attributes.Population;
+            }
+        })
+
+        return feature;
+    });
+
+    const {
+        confirmed,
+        deaths,
+        newCases,
+    } = calcWeeklyAve({
+        features,
+        totalPopulation: features[0].attributes.Population
+    });
+    // console.log(FIPSCode4NYCounty, confirmed, deaths, newCases)
+
+    saveToCOVID19LatestNumbers(FIPSCode4NYCounty, features);
+
+    data.push({
+        attributes,
+        confirmed,
+        deaths,
+        newCases,
+        geometry
+    })
+
+    return data;
+};
 
 const startUp = async()=>{
 
@@ -536,7 +604,8 @@ const startUp = async()=>{
         // console.log(USCountiesCOVID19TrendCategoryLookup)
 
         // handle Counties
-        const dataUSCounties = await fetchCovid19TrendData(USCounties);
+        let dataUSCounties = await fetchCovid19TrendData(USCounties);
+        dataUSCounties = fixDataIssue4NYCCounties(dataUSCounties);
         writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
         // console.log(JSON.stringify(data));
 
