@@ -25,14 +25,16 @@ type Covid19CasesByTimeQueryResultFeature = {
     }
 }
 
+type PathFrame = {
+    xmin: number;
+    ymin: number;
+    xmax: number;
+    ymax: number;
+}
+
 type PathData = {
     path: number[][];
-    frame: {
-        xmin: number;
-        ymin: number;
-        xmax: number;
-        ymax: number;
-    };
+    frame?: PathFrame;
 }
 
 type Covid19TrendData = FeatureFromJSON & {
@@ -48,6 +50,15 @@ type Covid19TrendDataAsPaths = FeatureFromJSON & {
     deaths: PathData;
     newCases: PathData;
 } 
+
+type ConvertCovid19TrendDataToPathResponse = {
+    features: Covid19TrendDataAsPaths[];
+    frames:{
+        confirmed: PathFrame;
+        deaths: PathFrame;
+        newCases: PathFrame;
+    }
+}
 
 type CalcWeeklyAveOptions = {
     features:Covid19CasesByTimeQueryResultFeature[];
@@ -436,7 +447,11 @@ const calcYMax = (data: Covid19TrendData[])=>{
 };
 
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
-const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttributes?:boolean): Covid19TrendDataAsPaths[]=>{
+const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttributes?:boolean): ConvertCovid19TrendDataToPathResponse=>{
+
+    let confirmedFrame:PathFrame;
+    let deathsFrame:PathFrame;
+    let newCasesFrame:PathFrame;
 
     const covid19TrendDataAsPaths = data
         .map(d=>{
@@ -452,12 +467,30 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
             const pathDeaths = calculatePath(deaths, yMaxDeaths);
             const pathNewCases = calculatePath(newCases, YMaxNewCases, .5);
 
+            if(!confirmedFrame){
+                confirmedFrame = pathConfirmed.frame;
+            }
+
+            if(!deathsFrame){
+                deathsFrame = pathDeaths.frame;
+            }
+
+            if(!newCasesFrame){
+                newCasesFrame = pathNewCases.frame;
+            }
+
             const outputData = {
                 // attributes,
                 geometry,
-                confirmed: pathConfirmed,
-                deaths: pathDeaths,
-                newCases: pathNewCases
+                confirmed: {
+                    path: pathConfirmed.path
+                },
+                deaths: {
+                    path: pathDeaths.path
+                },
+                newCases: {
+                    path: pathNewCases.path
+                }
             } as Covid19TrendDataAsPaths;
 
             if(includeAttributes){
@@ -474,9 +507,16 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
             }
 
             return !isBadPath;
-        })
-
-    return covid19TrendDataAsPaths;
+        });
+    
+    return {
+        features: covid19TrendDataAsPaths,
+        frames: {
+            confirmed: confirmedFrame,
+            deaths: deathsFrame,
+            newCases: newCasesFrame
+        }
+    };
 
 }
 
