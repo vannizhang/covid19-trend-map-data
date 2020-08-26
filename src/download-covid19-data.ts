@@ -57,7 +57,9 @@ type ConvertCovid19TrendDataToPathResponse = {
         confirmed: PathFrame;
         deaths: PathFrame;
         newCases: PathFrame;
-    }
+    },
+    // last time modified
+    modified?: number;
 }
 
 type CalcWeeklyAveOptions = {
@@ -515,7 +517,8 @@ const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttribu
             confirmed: confirmedFrame,
             deaths: deathsFrame,
             newCases: newCasesFrame
-        }
+        },
+        modified: new Date().getTime()
     };
 
 }
