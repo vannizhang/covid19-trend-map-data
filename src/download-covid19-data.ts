@@ -133,7 +133,7 @@ const COVID19LatestNumbers: {
 const calcWeeklyAve = ({
     features, 
     totalPopulation,
-    numOfDays = 7
+    numOfDays = 10
 }:CalcWeeklyAveOptions):CalcWeeklyAveResponse=>{
 
     let weeklyAveConfirmed: number[] = [];
