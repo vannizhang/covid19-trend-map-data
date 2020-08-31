@@ -349,7 +349,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
     const dayOfWeek = date.getDay();
 
     const featureOfLastSunday = dayOfWeek === 0 
-        ? features[ indexOfLatestFeature - 6 ]
+        ? latestFeature // 
         : features[ indexOfLatestFeature - dayOfWeek ];
 
     const weeklyNewCases =  latestFeature.attributes.Confirmed - featureOfLastSunday.attributes.Confirmed;
