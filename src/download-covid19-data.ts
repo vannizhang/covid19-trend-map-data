@@ -251,7 +251,7 @@ const fetchCovid19CasesByTimeData = async({
     try {
         const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?${qs.stringify(params)}`;
         const res = await axios.get(requestUrl);
-        console.log(`fetch data: ${where}`);
+        // console.log(`fetch data: ${where}`);
     
         return res.data && res.data.features 
             ? res.data.features 
