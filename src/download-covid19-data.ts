@@ -92,6 +92,7 @@ type COVID19LatestNumbersItem = {
     Confirmed: number;
     Deaths: number;
     NewCases: number;
+    NewDeaths: number;
     Population: number;
     TrendType: COVID19TrendType | '';
 };
@@ -335,32 +336,34 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
 
 const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQueryResultFeature[])=>{
 
-    const indexOfLatestFeature = features.length - 1;
+    // const indexOfLatestFeature = features.length - 1;
 
-    const latestFeature = features[indexOfLatestFeature];
+    const latestFeature = features[features.length - 1];
+    const feature7DaysAgo = features[features.length - 8]
 
     const { attributes } = latestFeature;
 
-    const { dt, Confirmed, Deaths, Population, NewCases } = attributes;
+    const { Confirmed, Deaths, Population } = attributes;
 
-    const [year, month, day] = dt.split('-');
-    const date = new Date(+year, +month - 1, +day);
+    // const [year, month, day] = dt.split('-');
+    // const date = new Date(+year, +month - 1, +day);
 
-    const dayOfWeek = date.getDay();
+    // const dayOfWeek = date.getDay();
 
-    const featureOfLastSunday = dayOfWeek === 0 
-        ? latestFeature // 
-        : features[ indexOfLatestFeature - dayOfWeek ];
+    // const featureOfLastSunday = dayOfWeek === 0 
+    //     ? latestFeature // 
+    //     : features[ indexOfLatestFeature - dayOfWeek ];
 
-    const weeklyNewCases =  latestFeature.attributes.Confirmed - featureOfLastSunday.attributes.Confirmed;
-    const weeklyNewDeaths =  latestFeature.attributes.Deaths - featureOfLastSunday.attributes.Deaths;
+    const newCasesPast7Days =  latestFeature.attributes.Confirmed - feature7DaysAgo.attributes.Confirmed;
+    const newDeathsPast7Days =  latestFeature.attributes.Deaths - feature7DaysAgo.attributes.Deaths;
 
     COVID19LatestNumbers[FIPS] = {
         Confirmed,
         Deaths,
         Population,
-        // new cases of this week
-        NewCases: weeklyNewCases,
+        // new cases and deaths of past 7 days
+        NewCases: newCasesPast7Days,
+        NewDeaths: newDeathsPast7Days,
         TrendType: USCountiesCOVID19TrendCategoryLookup[FIPS] || ''
     }
 };
