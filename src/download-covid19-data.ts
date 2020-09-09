@@ -3,8 +3,19 @@ const path = require('path');
 const qs = require('qs');
 const axios = require('axios');
 
+const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
+const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
+const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
+const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
+const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
+const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
+
+const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
+const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
+
 import * as USCounties from './US-Counties.json';
 import * as USStates from './US-States.json';
+import { promises } from 'fs';
 
 type FeatureFromJSON = {
     attributes?: any;
@@ -98,16 +109,6 @@ type COVID19LatestNumbersItem = {
 };
 
 type USStatesAndCountiesDataJSON = typeof USStates | typeof USCounties;
-
-const PUBLIC_FOLDER_PATH = path.join(__dirname, '../public');
-const OUTPUT_JSON_US_COUNTIES = path.join(PUBLIC_FOLDER_PATH, 'us-counties.json');
-const OUTPUT_JSON_US_COUNTIES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-counties-paths.json');
-const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
-const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
-const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
-
-const USCountiesCovid19CasesByTimeFeatureServiceURL = 'https://services9.arcgis.com/6Hv9AANartyT7fJW/ArcGIS/rest/services/USCounties_cases_V1/FeatureServer/1';
-const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4yjifSiIG17X0gW4/ArcGIS/rest/services/US_County_COVID19_Trends/FeatureServer/0';
 
 const YMaxNewCases = 200;
 let yMaxConfirmed = 0;
@@ -651,57 +652,109 @@ const fixDataIssue4NYCCounties = (data:Covid19TrendData[]):Covid19TrendData[]=>{
     return data;
 };
 
+
+const shouldExecuteDownloadTask = ():Promise<boolean>=>{
+
+    return new Promise(async(resolve, reject)=>{
+
+        try {
+            // get lastEditDate from JHU USCountiesCovid19CasesByTimeFeatureService
+            const url4JHUFeatureServiceJSON = `${USCountiesCovid19CasesByTimeFeatureServiceURL}?f=json`;
+
+            const res = await axios.get(url4JHUFeatureServiceJSON);
+        
+            const data: {
+                editingInfo: {
+                    lastEditDate: number
+                } 
+            } = res.data;
+        
+            const JHUFeatureServiceModified = data.editingInfo.lastEditDate;
+
+            // read US_STATES_PATHS json file and get the modified property
+            fs.readFile(OUTPUT_JSON_US_STATES_PATHS, 'utf8', (err, data)=>{
+
+                if (err || !data) {
+                    resolve(true);
+                } else {
+                    const USStatePaths:ConvertCovid19TrendDataToPathResponse = JSON.parse(data);
+            
+                    const USStatesPathsFileModified = USStatePaths && USStatePaths.modified ? +USStatePaths.modified : 0;
+            
+                    const hasModified = JHUFeatureServiceModified > USStatesPathsFileModified;
+        
+                    resolve(hasModified);
+                }
+            });
+
+        } catch(err){
+            resolve(true);
+        }
+
+    })
+
+
+}
+
 const startUp = async()=>{
 
     makeFolder(PUBLIC_FOLDER_PATH);
 
-    const startTime = new Date().getTime()
+    // only execute download tasks if JHU data has modified since last execution
+    const shouldExec = await shouldExecuteDownloadTask();
+
+    if(shouldExec){
+
+        const startTime = new Date().getTime();
+
+        try {
+            await fetchUSCountiesCOVID19TrendCategory();
+            // console.log(USCountiesCOVID19TrendCategoryLookup)
     
-    try {
-        await fetchUSCountiesCOVID19TrendCategory();
-        // console.log(USCountiesCOVID19TrendCategoryLookup)
-
-        // handle Counties
-        let dataUSCounties = await fetchCovid19TrendData(USCounties);
-        dataUSCounties = fixDataIssue4NYCCounties(dataUSCounties);
-        writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
-        // console.log(JSON.stringify(data));
-
-        // calc YMax that will be used when calc trend path, the YMax should be 2 standard deviation of max confirmed and deaths from all counties
-        if(!yMaxConfirmed || !yMaxDeaths){
-            const {
-                Confirmed,
-                Deaths
-            } = calcYMax(dataUSCounties);
-
-            yMaxConfirmed = Confirmed;
-            yMaxDeaths = Deaths;
+            // handle Counties
+            let dataUSCounties = await fetchCovid19TrendData(USCounties);
+            dataUSCounties = fixDataIssue4NYCCounties(dataUSCounties);
+            writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
+            // console.log(JSON.stringify(data));
+    
+            // calc YMax that will be used when calc trend path, the YMax should be 2 standard deviation of max confirmed and deaths from all counties
+            if(!yMaxConfirmed || !yMaxDeaths){
+                const {
+                    Confirmed,
+                    Deaths
+                } = calcYMax(dataUSCounties);
+    
+                yMaxConfirmed = Confirmed;
+                yMaxDeaths = Deaths;
+            }
+    
+            const dataUSCountiesWithTrendType = getCovid19Data4USCountiesWithTrendType(dataUSCounties)
+    
+            const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
+            writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
+    
+            // handle States
+            const dataUSStates = await fetchCovid19TrendData(USStates);
+            writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
+            // console.log(JSON.stringify(dataUSStates));
+    
+            const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
+            writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
+    
+            // save latest numbers
+            writeToJson(COVID19LatestNumbers, OUTPUT_JSON_LATEST_NUMBERS);
+    
+            const endTime = new Date();
+            const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
+            console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
+            
+        } catch(err){
+            console.log(JSON.stringify(err))
         }
 
-        const dataUSCountiesWithTrendType = getCovid19Data4USCountiesWithTrendType(dataUSCounties)
-
-        const dataUSCountiesPaths = convertCovid19TrendDataToPath(dataUSCountiesWithTrendType, true);
-        writeToJson(dataUSCountiesPaths, OUTPUT_JSON_US_COUNTIES_PATHS);
-
-        // handle States
-        const dataUSStates = await fetchCovid19TrendData(USStates);
-        writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
-        // console.log(JSON.stringify(dataUSStates));
-
-        const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
-        writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
-
-        // save latest numbers
-        writeToJson(COVID19LatestNumbers, OUTPUT_JSON_LATEST_NUMBERS);
-
-        const endTime = new Date();
-        const processTimeInMinutes = ((endTime.getTime() - startTime) / 1000 / 60 );
-        console.log(new Date(), `Processed data for ${dataUSCounties.length} Counties; processing time: ${processTimeInMinutes.toFixed(1)} min`, '\n');
-        
-    } catch(err){
-        console.log(JSON.stringify(err))
+    } else {
+        console.log(new Date(), `no change in JHU data, skip execution\n`);
     }
-
 };
 
 const writeToJson = (data, outputPath)=>{
