@@ -15,7 +15,6 @@ const USCountiesCOVID19TrendCategoryServiceURL = 'https://services1.arcgis.com/4
 
 import * as USCounties from './US-Counties.json';
 import * as USStates from './US-States.json';
-import { promises } from 'fs';
 
 type FeatureFromJSON = {
     attributes?: any;
@@ -752,9 +751,10 @@ const startUp = async()=>{
             console.log(JSON.stringify(err))
         }
 
-    } else {
-        console.log(new Date(), `no change in JHU data, skip execution\n`);
-    }
+    } 
+    // else {
+    //     console.log(new Date(), `no change in JHU data, skip execution\n`);
+    // }
 };
 
 const writeToJson = (data, outputPath)=>{
