@@ -587,6 +587,7 @@ const getCovid19Data4USCountiesWithTrendType = (features: Covid19TrendData[])=>{
         const trendType = USCountiesCOVID19TrendCategoryLookup[FIPS];
 
         d.attributes = { 
+            FIPS,
             trendType
         };
 
