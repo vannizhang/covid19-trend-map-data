@@ -99,6 +99,7 @@ type USCountiesCOVID19TrendCategoryFeature = {
 };
 
 type COVID19LatestNumbersItem = {
+    Name: string;
     Confirmed: number;
     Deaths: number;
     NewCases: number;
@@ -278,10 +279,12 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
         const { attributes, geometry } = feature;
 
         let results:Covid19CasesByTimeQueryResultFeature[] = [];
-        let FIPS:string = '';
+        let FIPS = '';
+        let name = '';
 
         if("FIPS" in attributes){
             FIPS = attributes.FIPS;
+            name = `${attributes.NAME}, ${attributes.STATE}`
             results = await fetchCovid19CasesByTimeData({
                 where: `FIPS = '${attributes.FIPS}'`
             });
@@ -289,6 +292,7 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
 
         if("STATE_NAME" in attributes){
             FIPS = attributes.STATE_FIPS;
+            name = attributes.STATE_NAME
             results = await fetchCovid19CasesByTimeData({
                 where: `ST_Name = '${attributes.STATE_NAME}'`,
                 returnStateLevelData: true
@@ -317,7 +321,7 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
                 });
                 // console.log(confirmed, deaths, newCases)
     
-                saveToCOVID19LatestNumbers(FIPS, results);
+                saveToCOVID19LatestNumbers(FIPS, name, results);
     
                 output.push({
                     attributes,
@@ -334,7 +338,7 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
 
 }
 
-const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQueryResultFeature[])=>{
+const saveToCOVID19LatestNumbers = (FIPS:string, Name:string, features: Covid19CasesByTimeQueryResultFeature[])=>{
 
     // const indexOfLatestFeature = features.length - 1;
 
@@ -358,13 +362,14 @@ const saveToCOVID19LatestNumbers = (FIPS:string, features: Covid19CasesByTimeQue
     const newDeathsPast7Days =  latestFeature.attributes.Deaths - feature7DaysAgo.attributes.Deaths;
 
     COVID19LatestNumbers[FIPS] = {
+        Name,
         Confirmed,
         Deaths,
         Population,
         // new cases and deaths of past 7 days
         NewCases: newCasesPast7Days,
         NewDeaths: newDeathsPast7Days,
-        TrendType: USCountiesCOVID19TrendCategoryLookup[FIPS] || ''
+        TrendType: USCountiesCOVID19TrendCategoryLookup[FIPS] || '',
     }
 };
 
@@ -639,7 +644,7 @@ const fixDataIssue4NYCCounties = (data:Covid19TrendData[]):Covid19TrendData[]=>{
     });
     // console.log(FIPSCode4NYCounty, confirmed, deaths, newCases)
 
-    saveToCOVID19LatestNumbers(FIPSCode4NYCounty, features);
+    saveToCOVID19LatestNumbers(FIPSCode4NYCounty, 'NEW YORK, NEW YORK', features);
 
     data.push({
         attributes,
