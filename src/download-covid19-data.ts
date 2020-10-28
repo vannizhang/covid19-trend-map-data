@@ -37,7 +37,7 @@ import {
 import {
     writeToJson,
     makeFolder
-} from './utils/files';
+} from './utils/fileFns';
 
 export type FeatureFromJSON = {
     attributes?: any;
