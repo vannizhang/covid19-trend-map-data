@@ -23,6 +23,30 @@ type Item2CalcPercentiles = {
 
 const items2CalcPercentiles: Item2CalcPercentiles[] = [];
 
+const calcPercentile = (num:number, values:number[]):number => {
+
+    if(!values || !values.length){
+        return 0;
+    }
+
+    let index = values.indexOf(num);
+
+    if(index === -1){
+        return 0;
+    }
+
+    if(values[index] < values[index + 1]){
+        index = index + 1;
+    } else {
+
+        while(values[index] === values[index + 1]){
+            index++;
+        }
+    }
+
+    return Math.round((index / values.length) * 100) / 100;
+}
+
 export const saveNumbers2CalcPercentiles = ({
     FIPS='',
     Confirmed=0,
@@ -38,8 +62,8 @@ export const saveNumbers2CalcPercentiles = ({
     
     const casesPerCapita = Confirmed ? +((Confirmed / Population) * 100000).toFixed(2) : 0;
     const deathsPerCapita = Deaths ? +((Deaths / Population) * 10000000).toFixed(2) : 0;
-    const caseFatalityRate = Confirmed ? Deaths / Confirmed : 0;
-    const caseFatalityRatePast100Day = newCasesPast100Days ? newDeathsPast100Days / newCasesPast100Days : 0; 
+    const caseFatalityRate = Confirmed ? +((Deaths / Confirmed).toFixed(4)) : 0;
+    const caseFatalityRatePast100Day = newCasesPast100Days ? +((newDeathsPast100Days / newCasesPast100Days).toFixed(4)) : 0; 
 
     if(FIPS.length === 5){
         casesPerCapita4Counties.push(casesPerCapita)
@@ -62,9 +86,9 @@ export const saveNumbers2CalcPercentiles = ({
     })
 }
 
-export const calcPercentiles = (covid19LatestNumbers:Covid19LatestNumbersLookup):Covid19LatestNumbersLookup=>{
+export const addPercentiles2Covid19LatestNumbers = (covid19LatestNumbers:Covid19LatestNumbersLookup):Covid19LatestNumbersLookup=>{
 
-    const data = JSON.parse(JSON.stringify(covid19LatestNumbers))
+    const data:Covid19LatestNumbersLookup = JSON.parse(JSON.stringify(covid19LatestNumbers))
 
     const sortNumsInAscendingOrder = (a:number, b:number)=>{ return a-b };
 
@@ -78,7 +102,32 @@ export const calcPercentiles = (covid19LatestNumbers:Covid19LatestNumbersLookup)
     deathsPerCapita4States.sort(sortNumsInAscendingOrder);
     caseFatalityRatePast100Day4States.sort(sortNumsInAscendingOrder);
 
-    console.log(casesPerCapita4Counties, caseFatalityRate4Counties, deathsPerCapita4Counties, caseFatalityRatePast100Day4Counties)
+    items2CalcPercentiles.forEach(item=>{
+
+        const {
+            FIPS,
+            casesPerCapita,
+            deathsPerCapita,
+            caseFatalityRate,
+            caseFatalityRatePast100Day
+        } = item;
+
+        const isState = FIPS.length === 2;
+
+        const casesPerCapitaValues = isState ? casesPerCapita4States : casesPerCapita4Counties;
+        const deathsPerCapitaValues = isState ? deathsPerCapita4States : deathsPerCapita4Counties;
+        const caseFatalityRateValues = isState ? caseFatalityRate4States : caseFatalityRate4Counties;
+        const caseFatalityRatePast100DayValues = isState ? caseFatalityRatePast100Day4States : caseFatalityRatePast100Day4Counties;
+
+        // Percentiles for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
+        data[FIPS].Percentiles = [
+            calcPercentile(casesPerCapita, casesPerCapitaValues),
+            calcPercentile(deathsPerCapita, deathsPerCapitaValues),
+            calcPercentile(caseFatalityRate, caseFatalityRateValues),
+            calcPercentile(caseFatalityRatePast100Day, caseFatalityRatePast100DayValues)
+        ]
+
+    });
 
     return data;
 }

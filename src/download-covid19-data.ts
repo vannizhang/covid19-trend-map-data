@@ -139,7 +139,7 @@ const startUp = async()=>{
             // console.log('Counties with COVD19 Data', JSON.stringify(dataUSCounties));
 
             dataUSCounties = fixDataIssue4NYCCounties(dataUSCounties);
-            console.log('Counties with COVD19 Data and fixed NYC issue', JSON.stringify(dataUSCounties));
+            // console.log('Counties with COVD19 Data and fixed NYC issue', JSON.stringify(dataUSCounties));
 
             writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
             // console.log(JSON.stringify(dataUSCounties));

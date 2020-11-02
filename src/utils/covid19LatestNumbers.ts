@@ -12,7 +12,7 @@ import {
 
 import {
     saveNumbers2CalcPercentiles,
-    calcPercentiles
+    addPercentiles2Covid19LatestNumbers
 } from './covid19Percentiles';
 
 type COVID19LatestNumbersItem = {
@@ -79,7 +79,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, Name:string, features: Covid19C
 };
 
 export const getCOVID19LatestNumbers = ():Covid19LatestNumbersLookup=>{
-    const data = calcPercentiles(covid19LatestNumbers);
+    const data = addPercentiles2Covid19LatestNumbers(covid19LatestNumbers);
     return data;
 }
 

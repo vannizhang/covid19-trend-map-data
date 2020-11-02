@@ -43,10 +43,10 @@ const fetchUSCountiesCOVID19TrendCategory = async()=>{
         
         try {
             const res4FeaturesSets1 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params)}`);
-            console.log(res4FeaturesSets1.data);
+            // console.log(res4FeaturesSets1.data);
         
             const res4FeaturesSets2 = await axios.get(`${USCountiesCOVID19TrendCategoryServiceURL}/query?${qs.stringify(params4feature)}`);
-            console.log(res4FeaturesSets2.data);
+            // console.log(res4FeaturesSets2.data);
         
             const features:USCountiesCOVID19TrendCategoryFeature[] = [
                 ...res4FeaturesSets1.data.features,
