@@ -10,6 +10,11 @@ import {
     getTrendCategoryByFIPS,
 } from './fetchUSCountiesCOVID19TrendCategory';
 
+import {
+    saveNumbers2CalcPercentiles,
+    calcPercentiles
+} from './covid19Percentiles';
+
 type COVID19LatestNumbersItem = {
     Name: string;
     Confirmed: number;
@@ -20,9 +25,11 @@ type COVID19LatestNumbersItem = {
     NewDeaths100Days: number;
     Population: number;
     TrendType: COVID19TrendType | '';
+    // Percentiles for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
+    Percentiles?: [number, number, number, number];
 };
 
-type Covid19LatestNumbersLookup = {
+export type Covid19LatestNumbersLookup = {
     [key: string]: COVID19LatestNumbersItem
 }
 
@@ -45,7 +52,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, Name:string, features: Covid19C
     const newCasesPast100Days =  latestFeature.attributes.Confirmed - features100DaysAgo.attributes.Confirmed;
     const newDeathsPast100Days =  latestFeature.attributes.Deaths - features100DaysAgo.attributes.Deaths;
 
-    covid19LatestNumbers[FIPS] = {
+    const latestNumbers:COVID19LatestNumbersItem = {
         Name,
         Confirmed,
         Deaths,
@@ -56,12 +63,24 @@ const saveToCOVID19LatestNumbers = (FIPS:string, Name:string, features: Covid19C
         // new cases and deaths of past 100 days
         NewCases100Days: newCasesPast100Days,
         NewDeaths100Days: newDeathsPast100Days,
-        TrendType: getTrendCategoryByFIPS(FIPS) || '',
-    }
+        TrendType: getTrendCategoryByFIPS(FIPS) || ''
+    };
+
+    covid19LatestNumbers[FIPS] = latestNumbers;
+
+    saveNumbers2CalcPercentiles({
+        FIPS,
+        Confirmed,
+        Deaths,
+        Population,
+        newCasesPast100Days,
+        newDeathsPast100Days,
+    })
 };
 
 export const getCOVID19LatestNumbers = ():Covid19LatestNumbersLookup=>{
-    return JSON.parse(JSON.stringify(covid19LatestNumbers))
+    const data = calcPercentiles(covid19LatestNumbers);
+    return data;
 }
 
 export default saveToCOVID19LatestNumbers;

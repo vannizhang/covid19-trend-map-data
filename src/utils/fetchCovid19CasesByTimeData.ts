@@ -8,7 +8,8 @@ import {
 import {
     FeatureFromJSON,
     Covid19TrendData,
-    USStatesAndCountiesDataJSON
+    USStatesAndCountiesDataJSON,
+    IsDevMode
 } from '../download-covid19-data';
 
 import {
@@ -87,8 +88,11 @@ const fetchCovid19CasesByTimeData = async({
     try {
         const requestUrl = `${USCountiesCovid19CasesByTimeFeatureServiceURL}/query/?${qs.stringify(params)}`;
         const res = await axios.get(requestUrl);
-        // console.log(`fetch data: ${where}`);
-    
+
+        if(IsDevMode){
+            console.log(`fetch data: ${where}`);
+        }
+        
         return res.data && res.data.features 
             ? res.data.features 
             : [];
@@ -103,6 +107,10 @@ const fetchCovid19CasesByTimeData = async({
 // JHU merged the data for couple NYC Counties (Quuens, Bronx, Brookly and etc) all into NY County,
 // therefore need to merge the data before calculate weekly ave
 export const fixDataIssue4NYCCounties = (data:Covid19TrendData[]):Covid19TrendData[]=>{
+
+    if(!features4NYCCounties[FIPSCode4NYCounty]){
+        return data;
+    }
 
     // counties don't include NY County
     const FIPSCodes4OtherNYCCounties = FIPSCodes4NYCCounties.filter(FIPS=> FIPS !== FIPSCode4NYCounty);
@@ -177,7 +185,7 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
             FIPS = attributes.FIPS;
             name = `${attributes.NAME}, ${attributes.STATE}`
             results = await fetchCovid19CasesByTimeData({
-                where: `FIPS = '${attributes.FIPS}'`
+                where: `FIPS = '${attributes.FIPS}' AND dt > '2020-02-29'`
             });
         }
 
@@ -185,7 +193,7 @@ const fetchCovid19TrendData = async(data:USStatesAndCountiesDataJSON):Promise<Co
             FIPS = attributes.STATE_FIPS;
             name = attributes.STATE_NAME
             results = await fetchCovid19CasesByTimeData({
-                where: `ST_Name = '${attributes.STATE_NAME}'`,
+                where: `ST_Name = '${attributes.STATE_NAME}' AND dt > '2020-02-29'`,
                 returnStateLevelData: true
             });
         }

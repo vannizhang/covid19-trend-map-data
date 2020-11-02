@@ -10,6 +10,8 @@ const OUTPUT_JSON_US_STATES = path.join(PUBLIC_FOLDER_PATH, 'us-states.json');
 const OUTPUT_JSON_US_STATES_PATHS = path.join(PUBLIC_FOLDER_PATH, 'us-states-paths.json');
 const OUTPUT_JSON_LATEST_NUMBERS = path.join(PUBLIC_FOLDER_PATH, 'latest-numbers.json');
 
+export const IsDevMode = process.argv[3] === 'development';
+
 import * as USCounties from './US-Counties.json';
 import * as USStates from './US-States.json';
 
@@ -61,6 +63,10 @@ const shouldExecuteDownloadTask = ():Promise<boolean>=>{
 
     return new Promise(async(resolve, reject)=>{
 
+        if(IsDevMode){
+            resolve(true)
+        }
+
         try {
             // get lastEditDate from JHU USCountiesCovid19CasesByTimeFeatureService
             const url4JHUFeatureServiceJSON = `${USCountiesCovid19CasesByTimeFeatureServiceURL}?f=json`;
@@ -98,6 +104,21 @@ const shouldExecuteDownloadTask = ():Promise<boolean>=>{
     })
 }
 
+const getUSCountyFeatures = ()=>{
+
+    const counties = {
+        ...USCounties 
+    };
+
+    if(IsDevMode){
+        counties.features = counties.features.filter(f=>{
+            return f.attributes.STATE === 'California'
+        })
+    }
+
+    return counties;
+}
+
 const startUp = async()=>{
 
     makeFolder(PUBLIC_FOLDER_PATH);
@@ -112,12 +133,16 @@ const startUp = async()=>{
         try {
             await fetchUSCountiesCOVID19TrendCategory();
             // console.log(USCountiesCOVID19TrendCategoryLookup)
-    
+
             // handle Counties
-            let dataUSCounties = await fetchCovid19TrendData(USCounties);
+            let dataUSCounties = await fetchCovid19TrendData(getUSCountyFeatures());
+            // console.log('Counties with COVD19 Data', JSON.stringify(dataUSCounties));
+
             dataUSCounties = fixDataIssue4NYCCounties(dataUSCounties);
+            console.log('Counties with COVD19 Data and fixed NYC issue', JSON.stringify(dataUSCounties));
+
             writeToJson(dataUSCounties, OUTPUT_JSON_US_COUNTIES);
-            // console.log(JSON.stringify(data));
+            // console.log(JSON.stringify(dataUSCounties));
     
             // calc YMax that will be used when calc trend path, the YMax should be 2 standard deviation of max confirmed and deaths from all counties
             calcYMax(dataUSCounties);

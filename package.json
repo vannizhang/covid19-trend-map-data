@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "download-covid19-data": "tsc && node dist/download-covid19-data.js",
+    "download-covid19-data-dev": "tsc && node dist/download-covid19-data.js --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
