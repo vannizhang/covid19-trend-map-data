@@ -35,6 +35,10 @@ const calcPercentile = (num:number, values:number[]):number => {
         return 0;
     }
 
+    if(index === values.length - 1){
+        return 1;
+    }
+
     if(values[index] < values[index + 1]){
         index = index + 1;
     } else {
@@ -43,8 +47,8 @@ const calcPercentile = (num:number, values:number[]):number => {
             index++;
         }
     }
-
-    return Math.round((index / values.length) * 100) / 100;
+    
+    return Math.round((index / values.length) * 10000) / 10000;
 }
 
 export const saveNumbers2CalcPercentiles = ({
@@ -60,8 +64,8 @@ export const saveNumbers2CalcPercentiles = ({
         return
     };
     
-    const casesPerCapita = Confirmed ? +((Confirmed / Population) * 100000).toFixed(2) : 0;
-    const deathsPerCapita = Deaths ? +((Deaths / Population) * 10000000).toFixed(2) : 0;
+    const casesPerCapita = Confirmed ? +((Confirmed / Population) * 100000).toFixed(4) : 0;
+    const deathsPerCapita = Deaths ? +((Deaths / Population) * 10000000).toFixed(4) : 0;
     const caseFatalityRate = Confirmed ? +((Deaths / Confirmed).toFixed(4)) : 0;
     const caseFatalityRatePast100Day = newCasesPast100Days ? +((newDeathsPast100Days / newCasesPast100Days).toFixed(4)) : 0; 
 
