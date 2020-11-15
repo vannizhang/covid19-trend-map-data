@@ -11,9 +11,9 @@ import {
 } from './fetchUSCountiesCOVID19TrendCategory';
 
 import {
-    saveNumbers2CalcPercentiles,
-    addPercentiles2Covid19LatestNumbers
-} from './covid19Percentiles';
+    saveNumbers2CalcRank,
+    addRank2Covid19LatestNumbers
+} from './covid19Ranks';
 
 type COVID19LatestNumbersItem = {
     Name: string;
@@ -27,6 +27,8 @@ type COVID19LatestNumbersItem = {
     TrendType: COVID19TrendType | '';
     // Percentiles for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
     Percentiles?: [number, number, number, number];
+    // Ranks for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
+    Ranks?: [number, number, number, number];
 };
 
 export type Covid19LatestNumbersLookup = {
@@ -68,7 +70,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, Name:string, features: Covid19C
 
     covid19LatestNumbers[FIPS] = latestNumbers;
 
-    saveNumbers2CalcPercentiles({
+    saveNumbers2CalcRank({
         FIPS,
         Confirmed,
         Deaths,
@@ -79,7 +81,7 @@ const saveToCOVID19LatestNumbers = (FIPS:string, Name:string, features: Covid19C
 };
 
 export const getCOVID19LatestNumbers = ():Covid19LatestNumbersLookup=>{
-    const data = addPercentiles2Covid19LatestNumbers(covid19LatestNumbers);
+    const data = addRank2Covid19LatestNumbers(covid19LatestNumbers);
     return data;
 }
 

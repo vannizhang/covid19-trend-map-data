@@ -13,7 +13,7 @@ let caseFatalityRate4States: number[] = [];
 let deathsPerCapita4States: number[] = [];
 let caseFatalityRatePast100Day4States: number[] = [];
 
-type Item2CalcPercentiles = {
+type Item2CalcRank = {
     FIPS: string;
     casesPerCapita: number;
     deathsPerCapita: number;
@@ -21,7 +21,7 @@ type Item2CalcPercentiles = {
     caseFatalityRatePast100Day: number;
 }
 
-const items2CalcPercentiles: Item2CalcPercentiles[] = [];
+const items2CalcRank: Item2CalcRank[] = [];
 
 const calcPercentile = (num:number, values:number[]):number => {
 
@@ -51,7 +51,17 @@ const calcPercentile = (num:number, values:number[]):number => {
     return Math.round((index / values.length) * 10000) / 10000;
 }
 
-export const saveNumbers2CalcPercentiles = ({
+const calcRank = (num:number, numsInAscendingOrder:number[]):number => {
+    let index = numsInAscendingOrder.indexOf(num);
+
+    if(index === -1){
+        return -1;
+    }
+
+    return numsInAscendingOrder.length - index;
+}
+
+export const saveNumbers2CalcRank = ({
     FIPS='',
     Confirmed=0,
     Deaths=0,
@@ -81,7 +91,7 @@ export const saveNumbers2CalcPercentiles = ({
         caseFatalityRatePast100Day4States.push(caseFatalityRatePast100Day)
     }
 
-    items2CalcPercentiles.push({
+    items2CalcRank.push({
         FIPS,
         casesPerCapita,
         deathsPerCapita,
@@ -90,7 +100,7 @@ export const saveNumbers2CalcPercentiles = ({
     })
 }
 
-export const addPercentiles2Covid19LatestNumbers = (covid19LatestNumbers:Covid19LatestNumbersLookup):Covid19LatestNumbersLookup=>{
+export const addRank2Covid19LatestNumbers = (covid19LatestNumbers:Covid19LatestNumbersLookup):Covid19LatestNumbersLookup=>{
 
     const data:Covid19LatestNumbersLookup = JSON.parse(JSON.stringify(covid19LatestNumbers))
 
@@ -106,7 +116,7 @@ export const addPercentiles2Covid19LatestNumbers = (covid19LatestNumbers:Covid19
     deathsPerCapita4States.sort(sortNumsInAscendingOrder);
     caseFatalityRatePast100Day4States.sort(sortNumsInAscendingOrder);
 
-    items2CalcPercentiles.forEach(item=>{
+    items2CalcRank.forEach(item=>{
 
         const {
             FIPS,
@@ -124,11 +134,11 @@ export const addPercentiles2Covid19LatestNumbers = (covid19LatestNumbers:Covid19
         const caseFatalityRatePast100DayValues = isState ? caseFatalityRatePast100Day4States : caseFatalityRatePast100Day4Counties;
 
         // Percentiles for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
-        data[FIPS].Percentiles = [
-            calcPercentile(casesPerCapita, casesPerCapitaValues),
-            calcPercentile(deathsPerCapita, deathsPerCapitaValues),
-            calcPercentile(caseFatalityRate, caseFatalityRateValues),
-            calcPercentile(caseFatalityRatePast100Day, caseFatalityRatePast100DayValues)
+        data[FIPS].Ranks = [
+            calcRank(casesPerCapita, casesPerCapitaValues),
+            calcRank(deathsPerCapita, deathsPerCapitaValues),
+            calcRank(caseFatalityRate, caseFatalityRateValues),
+            calcRank(caseFatalityRatePast100Day, caseFatalityRatePast100DayValues)
         ]
 
     });
