@@ -114,6 +114,31 @@ export const calcYMax = (data: Covid19TrendData[])=>{
     yMaxDeaths = Math.round(meanMaxDeaths + stdMaxDeaths * 2)
 };
 
+export const convertCovid19TrendDataToPath4States = (data : Covid19TrendData[]): ConvertCovid19TrendDataToPathResponse=>{
+
+    const statesData = [...data].map(d=>{
+        const {
+            attributes,
+            geometry,
+            confirmed,
+            deaths,
+            newCases
+        } = d;
+
+        return {
+            attributes: {
+                FIPS: attributes.STATE_FIPS
+            }, 
+            geometry,
+            confirmed,
+            deaths,
+            newCases
+        }
+    });
+
+    return convertCovid19TrendDataToPath(statesData, true)
+};
+
 // convert to path so it can be rendered using CIMSymbol in ArcGIS JS API
 const convertCovid19TrendDataToPath = (data : Covid19TrendData[], includeAttributes?:boolean): ConvertCovid19TrendDataToPathResponse=>{
 

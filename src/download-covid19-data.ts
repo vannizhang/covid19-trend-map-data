@@ -24,6 +24,7 @@ import fetchUSCountiesCOVID19TrendCategory, {
 } from './utils/fetchUSCountiesCOVID19TrendCategory';
 
 import convertCovid19TrendDataToPath, {
+    convertCovid19TrendDataToPath4States,
     ConvertCovid19TrendDataToPathResponse,
     calcYMax
 } from './utils/convertCovid19TrendDataToPath';
@@ -157,7 +158,7 @@ const startUp = async()=>{
             writeToJson(dataUSStates, OUTPUT_JSON_US_STATES);
             // console.log(JSON.stringify(dataUSStates));
     
-            const dataUSStatesPaths = convertCovid19TrendDataToPath(dataUSStates);
+            const dataUSStatesPaths = convertCovid19TrendDataToPath4States(dataUSStates);
             writeToJson(dataUSStatesPaths, OUTPUT_JSON_US_STATES_PATHS);
     
             // save latest numbers

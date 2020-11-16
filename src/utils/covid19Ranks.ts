@@ -76,8 +76,8 @@ export const saveNumbers2CalcRank = ({
     
     const casesPerCapita = Confirmed ? +((Confirmed / Population) * 100000).toFixed(4) : 0;
     const deathsPerCapita = Deaths ? +((Deaths / Population) * 10000000).toFixed(4) : 0;
-    const caseFatalityRate = Confirmed ? +((Deaths / Confirmed).toFixed(4)) : 0;
-    const caseFatalityRatePast100Day = newCasesPast100Days ? +((newDeathsPast100Days / newCasesPast100Days).toFixed(4)) : 0; 
+    const caseFatalityRate = Confirmed ? +((Deaths / Confirmed).toFixed(6)) : 0;
+    const caseFatalityRatePast100Day = newCasesPast100Days ? +((newDeathsPast100Days / newCasesPast100Days).toFixed(6)) : 0; 
 
     if(FIPS.length === 5){
         casesPerCapita4Counties.push(casesPerCapita)
@@ -132,6 +132,14 @@ export const addRank2Covid19LatestNumbers = (covid19LatestNumbers:Covid19LatestN
         const deathsPerCapitaValues = isState ? deathsPerCapita4States : deathsPerCapita4Counties;
         const caseFatalityRateValues = isState ? caseFatalityRate4States : caseFatalityRate4Counties;
         const caseFatalityRatePast100DayValues = isState ? caseFatalityRatePast100Day4States : caseFatalityRatePast100Day4Counties;
+
+        console.log(
+            FIPS,
+            casesPerCapita,
+            deathsPerCapita,
+            caseFatalityRate,
+            caseFatalityRatePast100Day
+        )
 
         // Percentiles for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
         data[FIPS].Ranks = [
