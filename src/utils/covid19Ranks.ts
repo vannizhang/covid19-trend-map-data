@@ -133,14 +133,6 @@ export const addRank2Covid19LatestNumbers = (covid19LatestNumbers:Covid19LatestN
         const caseFatalityRateValues = isState ? caseFatalityRate4States : caseFatalityRate4Counties;
         const caseFatalityRatePast100DayValues = isState ? caseFatalityRatePast100Day4States : caseFatalityRatePast100Day4Counties;
 
-        console.log(
-            FIPS,
-            casesPerCapita,
-            deathsPerCapita,
-            caseFatalityRate,
-            caseFatalityRatePast100Day
-        )
-
         // Percentiles for: casesPerCapita, deathsPerCapita, caseFatalityRate, caseFatalityRatePast100Day
         data[FIPS].Ranks = [
             calcRank(casesPerCapita, casesPerCapitaValues),
