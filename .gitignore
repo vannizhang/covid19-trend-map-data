@@ -106,3 +106,5 @@ public
 debug/
 dist/
 log.txt
+
+exec-download-esri-linux-vm.sh
