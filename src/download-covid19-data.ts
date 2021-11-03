@@ -88,13 +88,19 @@ const shouldExecuteDownloadTask = ():Promise<boolean>=>{
                 if (err || !data) {
                     resolve(true);
                 } else {
-                    const USStatePaths:ConvertCovid19TrendDataToPathResponse = JSON.parse(data);
+
+                    try {
+                        const USStatePaths:ConvertCovid19TrendDataToPathResponse = JSON.parse(data);
             
-                    const USStatesPathsFileModified = USStatePaths && USStatePaths.modified ? +USStatePaths.modified : 0;
+                        const USStatesPathsFileModified = USStatePaths && USStatePaths.modified ? +USStatePaths.modified : 0;
+                
+                        const hasModified = JHUFeatureServiceModified > USStatesPathsFileModified;
             
-                    const hasModified = JHUFeatureServiceModified > USStatesPathsFileModified;
-        
-                    resolve(hasModified);
+                        resolve(hasModified);
+
+                    } catch(err){
+                        resolve(true);
+                    }
                 }
             });
 
